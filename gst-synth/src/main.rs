@@ -159,14 +159,26 @@ fn tutorial_main() {
     let main_loop_clone = main_loop.clone();
     let pipeline_weak = pipeline.downgrade();
 
-    // Setting up "play" information.
-
     main_context.spawn_local(async move {
         while let Ok(command) = command_rx.recv().await {
             let Some(pipeline) = pipeline_weak.upgrade() else {
                 break;
             };
-            println!("New command received: {command:?}");
+            let freq = match command {
+                Command::C => 261.63,
+                Command::CSharp => 277.18,
+                Command::D => 293.66,
+                Command::DSharp => 311.13,
+                Command::E => 329.63,
+                Command::F => 349.23,
+                Command::FSharp => 369.99,
+                Command::G => 392.0,
+                Command::GSharp => 415.3,
+                Command::A => 440.0,
+                Command::ASharp => 466.16,
+                Command::B => 493.88,
+            };
+            audio_source.set_property("freq", freq);
         }
     });
 
