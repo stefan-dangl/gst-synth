@@ -36,6 +36,7 @@ enum WaveForm {
 enum Command {
     ChangeNote(Note),
     ChangeWaveForm(WaveForm),
+    ChangeOctave(usize),
 }
 
 fn handle_keyboard(ready_tx: async_channel::Sender<Command>) {
@@ -63,6 +64,14 @@ fn handle_keyboard(ready_tx: async_channel::Sender<Command>) {
                 Key::Char('b') => Command::ChangeWaveForm(WaveForm::Saw),
                 Key::Char('n') => Command::ChangeWaveForm(WaveForm::Triangle),
                 Key::Char('m') => Command::ChangeWaveForm(WaveForm::Silence),
+
+                Key::Char('1') => Command::ChangeOctave(1),
+                Key::Char('2') => Command::ChangeOctave(2),
+                Key::Char('3') => Command::ChangeOctave(3),
+                Key::Char('4') => Command::ChangeOctave(4),
+                Key::Char('5') => Command::ChangeOctave(5),
+                Key::Char('6') => Command::ChangeOctave(6),
+                Key::Char('7') => Command::ChangeOctave(7),
                 _ => continue,
             };
             ready_tx
@@ -179,6 +188,8 @@ fn tutorial_main() {
     let main_loop_clone = main_loop.clone();
     let pipeline_weak = pipeline.downgrade();
 
+    let mut octave = 4;
+
     main_context.spawn_local(async move {
         while let Ok(command) = command_rx.recv().await {
             let Some(pipeline) = pipeline_weak.upgrade() else {
@@ -187,20 +198,20 @@ fn tutorial_main() {
             match command {
                 Command::ChangeNote(note) => {
                     let freq = match note {
-                        Note::C => 261.63,
-                        Note::CSharp => 277.18,
-                        Note::D => 293.66,
-                        Note::DSharp => 311.13,
-                        Note::E => 329.63,
-                        Note::F => 349.23,
-                        Note::FSharp => 369.99,
-                        Note::G => 392.0,
-                        Note::GSharp => 415.3,
-                        Note::A => 440.0,
-                        Note::ASharp => 466.16,
-                        Note::B => 493.88,
+                        Note::C => 16.35,
+                        Note::CSharp => 17.32,
+                        Note::D => 18.35,
+                        Note::DSharp => 19.45,
+                        Note::E => 20.6,
+                        Note::F => 21.83,
+                        Note::FSharp => 23.12,
+                        Note::G => 24.5,
+                        Note::GSharp => 25.96,
+                        Note::A => 27.5,
+                        Note::ASharp => 29.14,
+                        Note::B => 30.87,
                     };
-                    audio_source.set_property("freq", freq);
+                    audio_source.set_property("freq", freq * 2.0_f64.powi(octave));
                 }
                 Command::ChangeWaveForm(wave_form) => {
                     let wave = match wave_form {
@@ -211,6 +222,10 @@ fn tutorial_main() {
                         WaveForm::Silence => "silence",
                     };
                     audio_source.set_property_from_str("wave", wave);
+                }
+
+                Command::ChangeOctave(value) => {
+                    octave = value as i32;
                 }
             };
         }
