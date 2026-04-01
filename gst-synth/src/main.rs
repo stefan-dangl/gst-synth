@@ -1,11 +1,73 @@
-use gst::{MessageType, prelude::*};
+use anyhow::Error;
+use gst::{
+    Element, MessageType, SeekFlags, SeekType, State,
+    event::{Seek, Step},
+    prelude::*,
+};
+use std::{io, thread, time};
+use termion::{event::Key, input::TermRead, raw::IntoRawMode};
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum Command {
+    C,
+    CSharp,
+    D,
+    DSharp,
+    E,
+    F,
+    FSharp,
+    G,
+    GSharp,
+    A,
+    ASharp,
+    B,
+    // TODO: Add commands for changing octaves
+}
+
+fn handle_keyboard(ready_tx: async_channel::Sender<Command>) {
+    let _stdout = io::stdout().into_raw_mode().unwrap();
+    let mut stdin = termion::async_stdin().keys();
+
+    loop {
+        if let Some(Ok(input)) = stdin.next() {
+            let command = match input {
+                Key::Char('a') => Command::C,
+                Key::Char('w') => Command::CSharp,
+                Key::Char('s') => Command::D,
+                Key::Char('e') => Command::DSharp,
+                Key::Char('d') => Command::E,
+                Key::Char('f') => Command::F,
+                Key::Char('t') => Command::FSharp,
+                Key::Char('g') => Command::G,
+                Key::Char('z') => Command::GSharp,
+                Key::Char('h') => Command::A,
+                Key::Char('u') => Command::ASharp,
+                Key::Char('j') => Command::B,
+                _ => continue,
+            };
+            ready_tx
+                .send_blocking(command)
+                .expect("failed to send data through channel");
+        }
+        thread::sleep(time::Duration::from_millis(50));
+    }
+}
 
 fn tutorial_main() {
-    // Initialize GStreamer
     if let Err(err) = gst::init() {
         eprintln!("Failed to initialize Gst: {err}");
         return;
     }
+
+    // Get a main context...
+    let main_context = glib::MainContext::default();
+    // ... and make it the main context by default so that we can then have a channel to send the
+    // commands we received from the terminal.
+    let _guard = main_context.acquire().unwrap();
+
+    let (command_tx, command_rx) = async_channel::bounded(5);
+    // TODO: Use Async instead?
+    thread::spawn(move || handle_keyboard(command_tx));
 
     let audio_source = gst::ElementFactory::make("audiotestsrc")
         .name("audio_source")
@@ -88,30 +150,27 @@ fn tutorial_main() {
     let queue_video_pad = video_queue.static_pad("sink").unwrap();
     tee_video_pad.link(&queue_video_pad).unwrap();
 
-    pipeline
-        .set_state(gst::State::Playing)
-        .expect("Unable to set the pipeline to the `Playing` state");
-    let bus = pipeline.bus().unwrap();
-    for msg in bus.iter_timed_filtered(
-        gst::ClockTime::NONE,
-        &[MessageType::Error, MessageType::Eos],
-    ) {
-        use gst::MessageView;
+    // Start playing
+    let _ = pipeline
+        .set_state(State::Playing)
+        .expect("Failed to start pipeline");
 
-        match msg.view() {
-            MessageView::Error(err) => {
-                eprintln!(
-                    "Error received from element {:?}: {}",
-                    err.src().map(|s| s.path_string()),
-                    err.error()
-                );
-                eprintln!("Debugging information: {:?}", err.debug());
+    let main_loop = glib::MainLoop::new(Some(&main_context), false);
+    let main_loop_clone = main_loop.clone();
+    let pipeline_weak = pipeline.downgrade();
+
+    // Setting up "play" information.
+
+    main_context.spawn_local(async move {
+        while let Ok(command) = command_rx.recv().await {
+            let Some(pipeline) = pipeline_weak.upgrade() else {
                 break;
-            }
-            MessageView::Eos(..) => break,
-            _ => (),
+            };
+            println!("New command received: {command:?}");
         }
-    }
+    });
+
+    main_loop.run();
 
     pipeline
         .set_state(gst::State::Null)
