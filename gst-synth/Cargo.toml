@@ -1,0 +1,17 @@
+[package]
+name = "gst-synth"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+gst = { package = "gstreamer", version = "0.24.5" }
+gst_app = { package = "gstreamer-app", version = "0.24.5" }
+gst_audio = { package = "gstreamer-audio", version = "0.24.5" }
+gst_pbutils = { package = "gstreamer-pbutils", version = "0.24.5" }
+gst_video = { package = "gstreamer-video", version = "0.24.5" }
+glib = "0.21"
+byte-slice-cast = "1"
+termion = "4.0.6"
+async-channel = "2.5.0"
+futures = "0.3"
