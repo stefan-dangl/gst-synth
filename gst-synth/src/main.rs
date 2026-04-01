@@ -8,7 +8,7 @@ use std::{io, thread, time};
 use termion::{event::Key, input::TermRead, raw::IntoRawMode};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-enum Command {
+enum Note {
     C,
     CSharp,
     D,
@@ -21,7 +21,21 @@ enum Command {
     A,
     ASharp,
     B,
-    // TODO: Add commands for changing octaves
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum WaveForm {
+    Sine,
+    Square,
+    Saw,
+    Triangle,
+    Silence, // TODO: Use between notes?
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum Command {
+    ChangeNote(Note),
+    ChangeWaveForm(WaveForm),
 }
 
 fn handle_keyboard(ready_tx: async_channel::Sender<Command>) {
@@ -31,25 +45,31 @@ fn handle_keyboard(ready_tx: async_channel::Sender<Command>) {
     loop {
         if let Some(Ok(input)) = stdin.next() {
             let command = match input {
-                Key::Char('a') => Command::C,
-                Key::Char('w') => Command::CSharp,
-                Key::Char('s') => Command::D,
-                Key::Char('e') => Command::DSharp,
-                Key::Char('d') => Command::E,
-                Key::Char('f') => Command::F,
-                Key::Char('t') => Command::FSharp,
-                Key::Char('g') => Command::G,
-                Key::Char('z') => Command::GSharp,
-                Key::Char('h') => Command::A,
-                Key::Char('u') => Command::ASharp,
-                Key::Char('j') => Command::B,
+                Key::Char('a') => Command::ChangeNote(Note::C),
+                Key::Char('w') => Command::ChangeNote(Note::CSharp),
+                Key::Char('s') => Command::ChangeNote(Note::D),
+                Key::Char('e') => Command::ChangeNote(Note::DSharp),
+                Key::Char('d') => Command::ChangeNote(Note::E),
+                Key::Char('f') => Command::ChangeNote(Note::F),
+                Key::Char('t') => Command::ChangeNote(Note::FSharp),
+                Key::Char('g') => Command::ChangeNote(Note::G),
+                Key::Char('z' | 'y') => Command::ChangeNote(Note::GSharp), // y to support german keyboards
+                Key::Char('h') => Command::ChangeNote(Note::A),
+                Key::Char('u') => Command::ChangeNote(Note::ASharp),
+                Key::Char('j') => Command::ChangeNote(Note::B),
+
+                Key::Char('c') => Command::ChangeWaveForm(WaveForm::Sine),
+                Key::Char('v') => Command::ChangeWaveForm(WaveForm::Square),
+                Key::Char('b') => Command::ChangeWaveForm(WaveForm::Saw),
+                Key::Char('n') => Command::ChangeWaveForm(WaveForm::Triangle),
+                Key::Char('m') => Command::ChangeWaveForm(WaveForm::Silence),
                 _ => continue,
             };
             ready_tx
                 .send_blocking(command)
                 .expect("failed to send data through channel");
         }
-        thread::sleep(time::Duration::from_millis(50));
+        thread::sleep(time::Duration::from_millis(5));
     }
 }
 
@@ -164,21 +184,35 @@ fn tutorial_main() {
             let Some(pipeline) = pipeline_weak.upgrade() else {
                 break;
             };
-            let freq = match command {
-                Command::C => 261.63,
-                Command::CSharp => 277.18,
-                Command::D => 293.66,
-                Command::DSharp => 311.13,
-                Command::E => 329.63,
-                Command::F => 349.23,
-                Command::FSharp => 369.99,
-                Command::G => 392.0,
-                Command::GSharp => 415.3,
-                Command::A => 440.0,
-                Command::ASharp => 466.16,
-                Command::B => 493.88,
+            match command {
+                Command::ChangeNote(note) => {
+                    let freq = match note {
+                        Note::C => 261.63,
+                        Note::CSharp => 277.18,
+                        Note::D => 293.66,
+                        Note::DSharp => 311.13,
+                        Note::E => 329.63,
+                        Note::F => 349.23,
+                        Note::FSharp => 369.99,
+                        Note::G => 392.0,
+                        Note::GSharp => 415.3,
+                        Note::A => 440.0,
+                        Note::ASharp => 466.16,
+                        Note::B => 493.88,
+                    };
+                    audio_source.set_property("freq", freq);
+                }
+                Command::ChangeWaveForm(wave_form) => {
+                    let wave = match wave_form {
+                        WaveForm::Sine => "sine",
+                        WaveForm::Square => "square",
+                        WaveForm::Saw => "saw",
+                        WaveForm::Triangle => "triangle",
+                        WaveForm::Silence => "silence",
+                    };
+                    audio_source.set_property_from_str("wave", wave);
+                }
             };
-            audio_source.set_property("freq", freq);
         }
     });
 
