@@ -101,6 +101,8 @@ fn tutorial_main() {
     let audio_source = gst::ElementFactory::make("audiotestsrc")
         .name("audio_source")
         .property("freq", 215.0)
+        .property("is-live", true)
+        .property("samplesperbuffer", 256i32)
         .build()
         .unwrap();
     let tee = gst::ElementFactory::make("tee")
@@ -109,6 +111,7 @@ fn tutorial_main() {
         .unwrap();
     let audio_queue = gst::ElementFactory::make("queue")
         .name("audio_queue")
+        .property("max-size-time", 20_000_000u64)
         .build()
         .unwrap();
     let audio_convert = gst::ElementFactory::make("audioconvert")
