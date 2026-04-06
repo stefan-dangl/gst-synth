@@ -20,7 +20,6 @@ pub enum WaveForm {
     Square,
     Saw,
     Triangle,
-    Silence, // TODO: Use between notes?
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]

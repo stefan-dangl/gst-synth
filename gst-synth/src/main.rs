@@ -26,8 +26,9 @@ fn main() {
         .expect("audio_source not found");
 
     let main_loop_clone = main_loop.clone();
+    let main_context_clone = main_context.clone();
     main_context.spawn_local(async move {
-        process(audio_source, command_rx).await;
+        process(audio_source, command_rx, main_context_clone).await;
         main_loop_clone.quit();
     });
     main_loop.run();

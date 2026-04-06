@@ -24,11 +24,10 @@ pub fn handle_keyboard(ready_tx: async_channel::Sender<Command>) {
                 Key::Char('u') => Command::ChangeNote(Note::ASharp),
                 Key::Char('j') => Command::ChangeNote(Note::B),
 
-                Key::Char('c') => Command::ChangeWaveForm(WaveForm::Sine),
-                Key::Char('v') => Command::ChangeWaveForm(WaveForm::Square),
-                Key::Char('b') => Command::ChangeWaveForm(WaveForm::Saw),
-                Key::Char('n') => Command::ChangeWaveForm(WaveForm::Triangle),
-                Key::Char('m') => Command::ChangeWaveForm(WaveForm::Silence),
+                Key::Char('v') => Command::ChangeWaveForm(WaveForm::Sine),
+                Key::Char('b') => Command::ChangeWaveForm(WaveForm::Square),
+                Key::Char('n') => Command::ChangeWaveForm(WaveForm::Saw),
+                Key::Char('m') => Command::ChangeWaveForm(WaveForm::Triangle),
 
                 Key::Char('1') => Command::ChangeOctave(1),
                 Key::Char('2') => Command::ChangeOctave(2),

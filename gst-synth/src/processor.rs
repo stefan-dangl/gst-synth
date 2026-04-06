@@ -1,8 +1,17 @@
 use crate::types::{Command, Note, WaveForm};
+use glib::MainContext;
 use gst::{Element, prelude::*};
+use std::time::Duration;
 
-pub async fn process(audio_source: Element, command_rx: async_channel::Receiver<Command>) {
+const RELEASE_TIME: Duration = Duration::from_millis(100);
+
+pub async fn process(
+    audio_source: Element,
+    command_rx: async_channel::Receiver<Command>,
+    main_context: MainContext,
+) {
     let mut octave = 4;
+    let mut wave_form = "sine";
 
     while let Ok(command) = command_rx.recv().await {
         match command {
@@ -25,17 +34,17 @@ pub async fn process(audio_source: Element, command_rx: async_channel::Receiver<
                     Note::ASharp => 29.14,
                     Note::B => 30.87,
                 };
+                audio_source.set_property_from_str("wave", wave_form);
                 audio_source.set_property("freq", freq * 2.0_f64.powi(octave));
+                main_context.spawn_local(note_release(audio_source.clone()));
             }
-            Command::ChangeWaveForm(wave_form) => {
-                let wave = match wave_form {
+            Command::ChangeWaveForm(wave) => {
+                wave_form = match wave {
                     WaveForm::Sine => "sine",
                     WaveForm::Square => "square",
                     WaveForm::Saw => "saw",
                     WaveForm::Triangle => "triangle",
-                    WaveForm::Silence => "silence",
                 };
-                audio_source.set_property_from_str("wave", wave);
             }
 
             Command::ChangeOctave(value) => {
@@ -43,4 +52,10 @@ pub async fn process(audio_source: Element, command_rx: async_channel::Receiver<
             }
         };
     }
+}
+
+async fn note_release(audio_source: Element) {
+    glib::timeout_future(RELEASE_TIME).await;
+    println!("Release time passed");
+    audio_source.set_property_from_str("wave", "silence");
 }

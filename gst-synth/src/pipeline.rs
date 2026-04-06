@@ -3,8 +3,8 @@ use gst::{Pipeline, prelude::*};
 pub fn create_pipeline() -> Pipeline {
     let audio_source = gst::ElementFactory::make("audiotestsrc")
         .name("audio_source")
-        .property("freq", 215.0)
         .property("is-live", true)
+        .property_from_str("wave", "silence")
         .build()
         .unwrap();
     let tee = gst::ElementFactory::make("tee")
