@@ -5,7 +5,6 @@ pub fn create_pipeline() -> Pipeline {
         .name("audio_source")
         .property("freq", 215.0)
         .property("is-live", true)
-        .property("samplesperbuffer", 256i32)
         .build()
         .unwrap();
     let tee = gst::ElementFactory::make("tee")
