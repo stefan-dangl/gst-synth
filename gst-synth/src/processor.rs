@@ -3,7 +3,7 @@ use glib::MainContext;
 use gst::{Element, prelude::*};
 use std::time::Duration;
 
-const RELEASE_TIME: Duration = Duration::from_millis(100);
+const RELEASE_TIME: Duration = Duration::from_millis(50);
 
 pub async fn process(
     audio_source: Element,
@@ -12,6 +12,7 @@ pub async fn process(
 ) {
     let mut octave = 4;
     let mut wave_form = "sine";
+    let mut note_release_task: Option<glib::JoinHandle<()>> = None;
 
     while let Ok(command) = command_rx.recv().await {
         match command {
@@ -20,6 +21,10 @@ pub async fn process(
             }
 
             Command::ChangeNote(note) => {
+                if let Some(task) = note_release_task.take() {
+                    task.abort();
+                }
+
                 let freq = match note {
                     Note::C => 16.35,
                     Note::CSharp => 17.32,
@@ -36,8 +41,10 @@ pub async fn process(
                 };
                 audio_source.set_property_from_str("wave", wave_form);
                 audio_source.set_property("freq", freq * 2.0_f64.powi(octave));
-                main_context.spawn_local(note_release(audio_source.clone()));
+                note_release_task
+                    .replace(main_context.spawn_local(note_release(audio_source.clone())));
             }
+
             Command::ChangeWaveForm(wave) => {
                 wave_form = match wave {
                     WaveForm::Sine => "sine",
