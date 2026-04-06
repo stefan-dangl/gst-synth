@@ -32,10 +32,8 @@ pub fn create_pipeline() -> Pipeline {
         .name("video_queue")
         .build()
         .unwrap();
-    let visual = gst::ElementFactory::make("wavescope")
+    let visual = gst::ElementFactory::make("monoscope")
         .name("visual")
-        .property_from_str("shader", "none")
-        .property_from_str("style", "lines")
         .build()
         .unwrap();
     let video_convert = gst::ElementFactory::make("videoconvert")
