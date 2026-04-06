@@ -9,6 +9,8 @@ pub fn handle_keyboard(ready_tx: async_channel::Sender<Command>) {
     loop {
         if let Some(Ok(input)) = stdin.next() {
             let command = match input {
+                Key::Char('q') => Command::Quit,
+
                 Key::Char('a') => Command::ChangeNote(Note::C),
                 Key::Char('w') => Command::ChangeNote(Note::CSharp),
                 Key::Char('s') => Command::ChangeNote(Note::D),
@@ -41,6 +43,7 @@ pub fn handle_keyboard(ready_tx: async_channel::Sender<Command>) {
                 .send_blocking(command)
                 .expect("failed to send data through channel");
         }
+
         thread::sleep(time::Duration::from_millis(5));
     }
 }

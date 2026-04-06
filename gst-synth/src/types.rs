@@ -28,4 +28,5 @@ pub enum Command {
     ChangeNote(Note),
     ChangeWaveForm(WaveForm),
     ChangeOctave(usize),
+    Quit,
 }

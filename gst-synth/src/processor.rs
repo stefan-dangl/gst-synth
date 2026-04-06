@@ -6,6 +6,10 @@ pub async fn process(audio_source: Element, command_rx: async_channel::Receiver<
 
     while let Ok(command) = command_rx.recv().await {
         match command {
+            Command::Quit => {
+                return;
+            }
+
             Command::ChangeNote(note) => {
                 let freq = match note {
                     Note::C => 16.35,

@@ -25,7 +25,11 @@ fn main() {
         .by_name("audio_source")
         .expect("audio_source not found");
 
-    main_context.spawn_local(process(audio_source, command_rx));
+    let main_loop_clone = main_loop.clone();
+    main_context.spawn_local(async move {
+        process(audio_source, command_rx).await;
+        main_loop_clone.quit();
+    });
     main_loop.run();
 
     pipeline
