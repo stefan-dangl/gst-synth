@@ -1,7 +1,10 @@
-use crate::{keyboard::handle_keyboard, pipeline::create_pipeline, processor::process};
+use crate::{
+    gui::draw_gui, keyboard::handle_keyboard, pipeline::create_pipeline, processor::process,
+};
 use gst::{State, prelude::*};
 use std::thread;
 
+mod gui;
 mod keyboard;
 mod pipeline;
 mod processor;
@@ -13,9 +16,6 @@ fn main() {
     let _guard = main_context.acquire().unwrap();
     let main_loop = glib::MainLoop::new(Some(&main_context), false);
 
-    let (command_tx, command_rx) = async_channel::bounded(5);
-    thread::spawn(move || handle_keyboard(command_tx));
-
     let pipeline = create_pipeline();
     let _ = pipeline
         .set_state(State::Playing)
@@ -25,12 +25,16 @@ fn main() {
         .by_name("audio_source")
         .expect("audio_source not found");
 
+    let (command_tx, command_rx) = async_channel::bounded(5);
     let main_loop_clone = main_loop.clone();
     let main_context_clone = main_context.clone();
     main_context.spawn_local(async move {
         process(audio_source, command_rx, main_context_clone).await;
         main_loop_clone.quit();
     });
+
+    draw_gui(command_tx.clone());
+    thread::spawn(move || handle_keyboard(command_tx));
     main_loop.run();
 
     pipeline
