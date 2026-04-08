@@ -2,7 +2,7 @@ use crate::types::{Command, Note, WaveForm};
 use std::{io, thread, time};
 use termion::{event::Key, input::TermRead, raw::IntoRawMode};
 
-pub fn handle_keyboard(ready_tx: async_channel::Sender<Command>) {
+pub fn handle_keyboard(command_tx: async_channel::Sender<Command>) {
     let _stdout = io::stdout().into_raw_mode().unwrap();
     let mut stdin = termion::async_stdin().keys();
 
@@ -38,7 +38,7 @@ pub fn handle_keyboard(ready_tx: async_channel::Sender<Command>) {
                 Key::Char('7') => Command::ChangeOctave(7),
                 _ => continue,
             };
-            ready_tx
+            command_tx
                 .send_blocking(command)
                 .expect("failed to send data through channel");
         }
