@@ -1,7 +1,7 @@
 use crate::types::{Command, Note};
 use gtk::GestureClick;
 use gtk::prelude::*;
-use gtk::{Frame, Label, glib};
+use gtk::{Box as GtkBox, Frame, Label, Orientation, glib};
 use gtk4 as gtk;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -9,11 +9,33 @@ use std::time::Duration;
 
 const NOTE_REPEAT_INTERVAL: Duration = Duration::from_millis(5);
 
-pub fn key(command_tx: async_channel::Sender<Command>, note: Note, label: &str) -> Frame {
+pub enum Color {
+    White,
+    Black,
+}
+
+pub fn key(
+    command_tx: async_channel::Sender<Command>,
+    note: Note,
+    label: &str,
+    key_color: Color,
+) -> Frame {
     let key = Frame::new(None);
     key.set_size_request(72, 72);
 
     let label = Label::new(Some(label));
+
+    match key_color {
+        Color::White => {
+            key.add_css_class("white-key");
+            label.add_css_class("white-key-label");
+        }
+        Color::Black => {
+            key.add_css_class("black-key");
+            label.add_css_class("black-key-label");
+        }
+    }
+
     key.set_child(Some(&label));
 
     let repeat_source = Rc::new(RefCell::new(None::<glib::SourceId>));
@@ -73,4 +95,10 @@ pub fn key(command_tx: async_channel::Sender<Command>, note: Note, label: &str) 
     key.add_controller(gesture);
 
     key
+}
+
+pub fn placeholder_key() -> GtkBox {
+    let placeholder = GtkBox::new(Orientation::Horizontal, 0);
+    placeholder.set_size_request(72, 72);
+    placeholder
 }
