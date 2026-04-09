@@ -1,5 +1,6 @@
 use crate::gui::keys::keyboard;
 use crate::gui::style::style;
+use crate::gui::waveform_selection::waveform_selection;
 use crate::types::Command;
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, Overlay, glib};
@@ -7,6 +8,7 @@ use gtk4 as gtk;
 
 mod keys;
 mod style;
+mod waveform_selection;
 
 pub fn draw_gui(command_tx: async_channel::Sender<Command>) -> glib::ExitCode {
     let application = Application::builder()
@@ -17,16 +19,16 @@ pub fn draw_gui(command_tx: async_channel::Sender<Command>) -> glib::ExitCode {
         let window = ApplicationWindow::builder()
             .application(app)
             .title("First GTK Program")
-            .default_width(350)
-            .default_height(200)
+            .default_width(1600)
+            .default_height(600)
             .build();
 
         let overlay = Overlay::new();
         overlay.set_hexpand(true);
         overlay.set_vexpand(true);
 
+        waveform_selection(&overlay, command_tx.clone());
         keyboard(&overlay, command_tx.clone());
-
         window.set_child(Some(&overlay));
 
         gtk::style_context_add_provider_for_display(

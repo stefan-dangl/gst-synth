@@ -15,7 +15,7 @@ pub enum Color {
     Black,
 }
 
-pub fn key(
+fn key(
     command_tx: async_channel::Sender<Command>,
     note: Note,
     label: &str,
@@ -98,7 +98,7 @@ pub fn key(
     key
 }
 
-pub fn placeholder_key() -> GtkBox {
+fn placeholder_key() -> GtkBox {
     let placeholder = GtkBox::new(Orientation::Horizontal, 0);
     placeholder.set_size_request(72, 72);
     placeholder
@@ -120,7 +120,7 @@ pub fn keyboard(overlay: &Overlay, command_tx: async_channel::Sender<Command>) {
     tones.append(&key(command_tx.clone(), Note::A, "A", Color::White));
     tones.append(&key(command_tx.clone(), Note::B, "B", Color::White));
 
-    overlay.set_child(Some(&tones));
+    overlay.add_overlay(&tones);
 
     let semitones = GtkBox::new(Orientation::Horizontal, 12);
     semitones.set_halign(Align::Center);
