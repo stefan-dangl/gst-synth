@@ -1,10 +1,14 @@
-use crate::gui::key::key;
-use crate::types::{Command, Note};
+use crate::gui::keys::keyboard;
+use crate::gui::style::style;
+use crate::gui::waveform_selection::waveform_selection;
+use crate::types::Command;
 use gtk::prelude::*;
-use gtk::{Application, ApplicationWindow, Box as GtkBox, Orientation, glib};
+use gtk::{Application, ApplicationWindow, Overlay, glib};
 use gtk4 as gtk;
 
-mod key;
+mod keys;
+mod style;
+mod waveform_selection;
 
 pub fn draw_gui(command_tx: async_channel::Sender<Command>) -> glib::ExitCode {
     let application = Application::builder()
@@ -15,25 +19,23 @@ pub fn draw_gui(command_tx: async_channel::Sender<Command>) -> glib::ExitCode {
         let window = ApplicationWindow::builder()
             .application(app)
             .title("First GTK Program")
-            .default_width(350)
-            .default_height(200)
+            .default_width(1600)
+            .default_height(600)
             .build();
 
-        let keyboard = GtkBox::new(Orientation::Horizontal, 12);
-        keyboard.set_margin_top(24);
-        keyboard.set_margin_bottom(24);
-        keyboard.set_margin_start(24);
-        keyboard.set_margin_end(24);
+        let overlay = Overlay::new();
+        overlay.set_hexpand(true);
+        overlay.set_vexpand(true);
 
-        keyboard.append(&key(command_tx.clone(), Note::C, "C"));
-        keyboard.append(&key(command_tx.clone(), Note::D, "D"));
-        keyboard.append(&key(command_tx.clone(), Note::E, "E"));
-        keyboard.append(&key(command_tx.clone(), Note::F, "F"));
-        keyboard.append(&key(command_tx.clone(), Note::G, "G"));
-        keyboard.append(&key(command_tx.clone(), Note::A, "A"));
-        keyboard.append(&key(command_tx.clone(), Note::B, "B"));
+        waveform_selection(&overlay, command_tx.clone());
+        keyboard(&overlay, command_tx.clone());
+        window.set_child(Some(&overlay));
 
-        window.set_child(Some(&keyboard));
+        gtk::style_context_add_provider_for_display(
+            &gtk::prelude::WidgetExt::display(&window),
+            &style(),
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
 
         window.present();
     });
