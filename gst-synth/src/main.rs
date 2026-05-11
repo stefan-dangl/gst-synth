@@ -12,6 +12,7 @@ mod types;
 
 fn main() {
     gst::init().expect("Failed to initialize Gstreamer");
+    gstgtk4::plugin_register_static().expect("Failed to register gtk4 plugin");
     let main_context = glib::MainContext::default();
     let _guard = main_context.acquire().unwrap();
     let main_loop = glib::MainLoop::new(Some(&main_context), false);
@@ -24,6 +25,9 @@ fn main() {
     let audio_source = pipeline
         .by_name("audio_source")
         .expect("audio_source not found");
+    let video_sink = pipeline
+        .by_name("video_sink")
+        .expect("video_sink not found");
 
     let (command_tx, command_rx) = async_channel::bounded(5);
     let main_loop_clone = main_loop.clone();
@@ -33,7 +37,7 @@ fn main() {
         main_loop_clone.quit();
     });
 
-    draw_gui(command_tx.clone());
+    draw_gui(command_tx.clone(), video_sink);
     thread::spawn(move || handle_keyboard(command_tx));
     main_loop.run();
 

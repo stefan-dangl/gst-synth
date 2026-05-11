@@ -14,7 +14,7 @@ mod waveform_selection;
 
 pub fn draw_gui(
     command_tx: async_channel::Sender<Command>,
-    // video_sink: gst::Element,
+    video_sink: gst::Element,
 ) -> glib::ExitCode {
     let application = Application::builder()
         .application_id("com.example.FirstGtkApp")
@@ -33,7 +33,7 @@ pub fn draw_gui(
         overlay.set_vexpand(true);
 
         waveform_selection(&overlay, command_tx.clone());
-        // visualization(&overlay, video_sink);
+        visualization(&overlay, video_sink.clone());
         keyboard(&overlay, command_tx.clone());
         window.set_child(Some(&overlay));
 

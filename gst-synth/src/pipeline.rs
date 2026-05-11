@@ -11,6 +11,8 @@ pub fn create_pipeline() -> Pipeline {
         .name("tee")
         .build()
         .unwrap();
+
+    // Audio branch
     let audio_queue = gst::ElementFactory::make("queue")
         .name("audio_queue")
         .property("max-size-time", 20_000_000u64)
@@ -28,6 +30,8 @@ pub fn create_pipeline() -> Pipeline {
         .name("audio_sink")
         .build()
         .unwrap();
+
+    // Video branch
     let video_queue = gst::ElementFactory::make("queue")
         .name("video_queue")
         .build()
@@ -40,7 +44,7 @@ pub fn create_pipeline() -> Pipeline {
         .name("video_convert")
         .build()
         .unwrap();
-    let video_sink = gst::ElementFactory::make("autovideosink")
+    let video_sink = gst::ElementFactory::make("gtk4paintablesink")
         .name("video_sink")
         .build()
         .unwrap();
