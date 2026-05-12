@@ -18,6 +18,13 @@ pub fn create_pipeline() -> Pipeline {
         .property("max-size-time", 20_000_000u64)
         .build()
         .unwrap();
+    let audio_echo = gst::ElementFactory::make("audioecho")
+        .name("audio_echo")
+        .property("delay", 1_000_000_000u64)
+        .property("intensity", 0.9f32)
+        .property("feedback", 0.9f32)
+        .build()
+        .unwrap();
     let audio_convert = gst::ElementFactory::make("audioconvert")
         .name("audio_convert")
         .build()
@@ -56,6 +63,7 @@ pub fn create_pipeline() -> Pipeline {
             &audio_source,
             &tee,
             &audio_queue,
+            &audio_echo,
             &audio_convert,
             &audio_resample,
             &audio_sink,
@@ -67,7 +75,14 @@ pub fn create_pipeline() -> Pipeline {
         .unwrap();
 
     gst::Element::link_many([&audio_source, &tee]).unwrap();
-    gst::Element::link_many([&audio_queue, &audio_convert, &audio_resample, &audio_sink]).unwrap();
+    gst::Element::link_many([
+        &audio_queue,
+        &audio_convert,
+        &audio_echo,
+        &audio_resample,
+        &audio_sink,
+    ])
+    .unwrap();
     gst::Element::link_many([&video_queue, &visual, &video_convert, &video_sink]).unwrap();
 
     let tee_audio_pad = tee.request_pad_simple("src_%u").unwrap();
