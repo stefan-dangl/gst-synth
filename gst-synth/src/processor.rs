@@ -1,4 +1,4 @@
-use crate::types::{Command, Note, WaveForm};
+use crate::types::{Command, Note, OCTAVE_DEFAULT, WaveForm};
 use glib::MainContext;
 use gst::{Element, prelude::*};
 use std::time::Duration;
@@ -10,7 +10,7 @@ pub async fn process(
     command_rx: async_channel::Receiver<Command>,
     main_context: MainContext,
 ) {
-    let mut octave = 4;
+    let mut octave = OCTAVE_DEFAULT;
     let mut wave_form = "sine";
     let mut note_release_task: Option<glib::JoinHandle<()>> = None;
 
@@ -40,7 +40,7 @@ pub async fn process(
                     Note::B => 30.87,
                 };
                 audio_source.set_property_from_str("wave", wave_form);
-                audio_source.set_property("freq", freq * 2.0_f64.powi(octave));
+                audio_source.set_property("freq", freq * 2.0_f64.powi(octave as i32));
                 note_release_task
                     .replace(main_context.spawn_local(note_release(audio_source.clone())));
             }
@@ -55,7 +55,7 @@ pub async fn process(
             }
 
             Command::ChangeOctave(value) => {
-                octave = value as i32;
+                octave = value;
             }
         };
     }
