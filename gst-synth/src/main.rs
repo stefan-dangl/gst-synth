@@ -28,6 +28,9 @@ fn main() {
     let video_sink = pipeline
         .by_name("video_sink")
         .expect("video_sink not found");
+    let effect_bin = pipeline
+        .by_name("effect_bin")
+        .expect("effect_bin not found");
 
     let (command_tx, command_rx) = async_channel::bounded(5);
     let main_loop_clone = main_loop.clone();
@@ -37,7 +40,7 @@ fn main() {
         main_loop_clone.quit();
     });
 
-    draw_gui(command_tx.clone(), video_sink);
+    draw_gui(command_tx.clone(), video_sink, effect_bin);
     thread::spawn(move || handle_keyboard(command_tx));
     main_loop.run();
 

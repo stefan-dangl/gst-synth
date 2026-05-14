@@ -1,3 +1,4 @@
+use crate::gui::effects::effects;
 use crate::gui::keys::keyboard;
 use crate::gui::octave_selection::octave_selection;
 use crate::gui::style::style;
@@ -8,6 +9,7 @@ use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, Overlay, glib};
 use gtk4 as gtk;
 
+mod effects;
 mod keys;
 mod octave_selection;
 mod style;
@@ -17,6 +19,7 @@ mod waveform_selection;
 pub fn draw_gui(
     command_tx: async_channel::Sender<Command>,
     video_sink: gst::Element,
+    effect_bin: gst::Element,
 ) -> glib::ExitCode {
     let application = Application::builder()
         .application_id("com.example.FirstGtkApp")
@@ -36,6 +39,7 @@ pub fn draw_gui(
 
         waveform_selection(&overlay, command_tx.clone());
         visualization(&overlay, video_sink.clone());
+        effects(&overlay, effect_bin.clone());
         octave_selection(&overlay, command_tx.clone());
         keyboard(&overlay, command_tx.clone());
         window.set_child(Some(&overlay));

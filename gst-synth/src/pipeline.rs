@@ -17,19 +17,19 @@ pub fn create_pipeline() -> Pipeline {
         .unwrap();
     let band_pass = gst::ElementFactory::make("audiochebband")
         .name("audio_band_pass")
-        .property("lower-frequency", 100f32)
-        .property("upper-frequency", 10000f32)
-        .property("poles", 8i32)
+        .property("lower-frequency", 0f32)
+        .property("upper-frequency", 20000f32)
+        .property("poles", 4i32)
         .build()
         .unwrap();
-    let audio_echo = gst::ElementFactory::make("audioecho")
+    let echo = gst::ElementFactory::make("audioecho")
         .name("audio_echo")
-        .property("delay", 1_000_000_000u64)
+        .property("max-delay", 3_000_000_000u64)
+        .property("delay", 1u64)
         .property("intensity", 0.4f32)
-        .property("feedback", 0.0f32)
+        .property("feedback", 0.4f32)
         .build()
         .unwrap();
-    // TODO: Other interesting effects: audioamplify, audiodynamic, equalizer-3bands, audiocheblimit
     let audio_convert = gst::ElementFactory::make("audioconvert")
         .name("audio_convert")
         .build()
@@ -78,12 +78,22 @@ pub fn create_pipeline() -> Pipeline {
 
     let pipeline = gst::Pipeline::with_name("test-pipeline");
 
+    let effect_bin = gst::Bin::with_name("effect_bin");
+    effect_bin
+        .add_many([&equalizer, &band_pass, &echo])
+        .unwrap();
+    gst::Element::link_many([&equalizer, &band_pass, &echo]).unwrap();
+    effect_bin
+        .add_pad(&gst::GhostPad::with_target(&equalizer.static_pad("sink").unwrap()).unwrap())
+        .unwrap();
+    effect_bin
+        .add_pad(&gst::GhostPad::with_target(&echo.static_pad("src").unwrap()).unwrap())
+        .unwrap();
+
     pipeline
         .add_many([
             &audio_source,
-            &equalizer,
-            &band_pass,
-            &audio_echo,
+            effect_bin.upcast_ref::<gst::Element>(),
             &audio_convert,
             &tee,
             &audio_queue,
@@ -99,9 +109,7 @@ pub fn create_pipeline() -> Pipeline {
 
     gst::Element::link_many([
         &audio_source,
-        &equalizer,
-        &band_pass,
-        &audio_echo,
+        effect_bin.upcast_ref::<gst::Element>(),
         &audio_convert,
         &tee,
     ])
