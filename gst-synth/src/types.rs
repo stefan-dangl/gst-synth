@@ -1,3 +1,7 @@
+pub const OCTAVE_MIN: usize = 1;
+pub const OCTAVE_MAX: usize = 7;
+pub const OCTAVE_DEFAULT: usize = 4;
+
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Note {
     C,

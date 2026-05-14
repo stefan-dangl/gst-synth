@@ -23,6 +23,12 @@ label.white-key-label {
 label.black-key-label {
     color: #fff;
 }
+
+label.octave-value {
+    color: #fff;
+    font-size: 24px;
+    font-weight: bold;
+}
 "#,
     );
     provider
