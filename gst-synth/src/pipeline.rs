@@ -1,16 +1,18 @@
 use gst::{Pipeline, prelude::*};
 
+use crate::types::WAVEFORM_DEFAULT;
+
 pub fn create_pipeline() -> Pipeline {
     // Audio Source
     let audio_source = gst::ElementFactory::make("audiotestsrc")
         .name("audio_source")
         .property("is-live", true)
-        .property_from_str("wave", "silence")
+        .property_from_str("wave", WAVEFORM_DEFAULT)
         .build()
         .unwrap();
     let audio_amplify = gst::ElementFactory::make("audioamplify")
         .name("audio_amplify")
-        .property("amplification", 1.0f32)
+        .property("amplification", 0.0f32)
         .build()
         .unwrap();
 

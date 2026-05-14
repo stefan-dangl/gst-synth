@@ -1,9 +1,16 @@
-use crate::types::{Command, Note, OCTAVE_DEFAULT, WaveForm};
+use crate::{
+    keyboard::REPEAT_INTERVAL,
+    types::{
+        ATTACK_TIME_DEFAULT, Command, MAX_AMPLIFICATION, Note, OCTAVE_DEFAULT,
+        RELEASE_TIME_DEFAULT, Setting, WaveForm,
+    },
+};
 use glib::MainContext;
 use gst::{Element, prelude::*};
 use std::time::Duration;
 
-const RELEASE_TIME: Duration = Duration::from_millis(50);
+const SUSTAIN_TIME: Duration = Duration::from_millis(50);
+const RELEASE_STEPS: u32 = 100;
 
 pub async fn sound_generator(
     audio_source: Element,
@@ -12,8 +19,9 @@ pub async fn sound_generator(
     main_context: MainContext,
 ) {
     let mut octave = OCTAVE_DEFAULT;
-    let mut wave_form = "sine";
     let mut note_release_task: Option<glib::JoinHandle<()>> = None;
+    let mut release_time = RELEASE_TIME_DEFAULT;
+    let mut attack_time = ATTACK_TIME_DEFAULT;
 
     while let Ok(command) = command_rx.recv().await {
         match command {
@@ -40,41 +48,56 @@ pub async fn sound_generator(
                     Note::ASharp => 29.14,
                     Note::B => 30.87,
                 };
-                audio_source.set_property_from_str("wave", wave_form); // TODO_SD: Move
-                audio_amplify.set_property("amplification", 1.0f32);
+                note_attack(&audio_amplify, attack_time);
                 audio_source.set_property("freq", freq * 2.0_f64.powi(octave as i32));
-                note_release_task
-                    .replace(main_context.spawn_local(note_release(audio_amplify.clone())));
+                note_release_task.replace(
+                    main_context.spawn_local(note_release(audio_amplify.clone(), release_time)),
+                );
             }
 
             Command::ChangeWaveForm(wave) => {
-                wave_form = match wave {
+                let wave_form = match wave {
                     WaveForm::Sine => "sine",
                     WaveForm::Square => "square",
                     WaveForm::Saw => "saw",
                     WaveForm::Triangle => "triangle",
                 };
+                audio_source.set_property_from_str("wave", wave_form);
             }
 
             Command::ChangeOctave(value) => {
                 octave = value;
             }
+
+            Command::ChangeSetting(setting) => match setting {
+                Setting::AttackTime(duration) => attack_time = duration,
+                Setting::ReleaseTime(duration) => release_time = duration,
+            },
         };
     }
 }
 
-async fn note_release(audio_amplify: Element) {
-    // TODO: make configurable
-    const FADE_OUT_TIME: Duration = Duration::from_millis(3000);
-    const FADE_OUT_STEPS: u32 = 100;
-    let fade_out_sleep_time = FADE_OUT_TIME / FADE_OUT_STEPS;
+fn note_attack(audio_amplify: &Element, attack_time: Duration) {
+    let x_steps = attack_time.as_nanos() / REPEAT_INTERVAL.as_nanos();
+    let y_steps = MAX_AMPLIFICATION / x_steps as f32;
 
-    glib::timeout_future(RELEASE_TIME).await;
+    let amplification = audio_amplify.property::<f32>("amplification") as f32;
+    println!("!!! READ AMP: {amplification}");
+    if amplification < MAX_AMPLIFICATION {
+        let amplification_new = (amplification + y_steps).min(MAX_AMPLIFICATION);
+        audio_amplify.set_property("amplification", amplification_new);
+    }
+}
+
+async fn note_release(audio_amplify: Element, release_time: Duration) {
+    let fade_out_sleep_time = release_time / RELEASE_STEPS;
+
+    glib::timeout_future(SUSTAIN_TIME).await;
     println!("Release time passed");
 
-    let mut amplification = 1.0f32;
+    let mut amplification = audio_amplify.property::<f32>("amplification") as f32;
     while amplification > 0.0 {
-        amplification -= 1.0 / FADE_OUT_STEPS as f32;
+        amplification -= 1.0 / RELEASE_STEPS as f32;
         amplification = amplification.max(0.0);
         println!("!!! AMPLIFICATION: {amplification}");
         audio_amplify.set_property("amplification", amplification);

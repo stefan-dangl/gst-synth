@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Duration;
 
-const REPEAT_INTERVAL: Duration = Duration::from_millis(5);
+pub const REPEAT_INTERVAL: Duration = Duration::from_millis(5);
 
 fn key_to_command(key: gdk::Key) -> Option<Command> {
     match key {
