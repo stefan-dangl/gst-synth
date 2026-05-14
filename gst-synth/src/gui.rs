@@ -12,6 +12,7 @@ use gtk4 as gtk;
 
 mod effects;
 mod keys;
+mod knob;
 mod octave_selection;
 mod style;
 mod visualization;

@@ -1,4 +1,8 @@
-use crate::types::{Command, WaveForm};
+use super::knob::knob;
+use crate::types::{
+    ATTACK_TIME_DEFAULT, RELEASE_TIME_DEFAULT,
+    Command, Setting, WaveForm,
+};
 use gtk::DrawingArea;
 use gtk::GestureClick;
 use gtk::prelude::*;
@@ -6,6 +10,7 @@ use gtk::{Box as GtkBox, Frame, Orientation, Overlay};
 use gtk4 as gtk;
 use gtk4::Align;
 use std::f64::consts::PI;
+use std::time::Duration;
 
 fn waveform_icon(waveform: WaveForm) -> DrawingArea {
     let area = DrawingArea::new();
@@ -62,7 +67,7 @@ fn waveform_icon(waveform: WaveForm) -> DrawingArea {
     area
 }
 
-fn button(command_tx: async_channel::Sender<Command>, waveform: WaveForm) -> Frame {
+fn waveform_button(command_tx: async_channel::Sender<Command>, waveform: WaveForm) -> Frame {
     let frame = Frame::new(None);
     frame.set_size_request(72, 72);
     frame.add_css_class("black-key");
@@ -82,17 +87,52 @@ fn button(command_tx: async_channel::Sender<Command>, waveform: WaveForm) -> Fra
 }
 
 pub fn waveform_selection(overlay: &Overlay, command_tx: async_channel::Sender<Command>) {
+    let container = GtkBox::new(Orientation::Vertical, 12);
+    container.set_halign(Align::Start);
+    container.set_valign(Align::Start);
+    container.set_margin_top(24);
+    container.set_margin_start(24);
+    container.set_margin_end(24);
+
     let waveforms = GtkBox::new(Orientation::Horizontal, 12);
-    waveforms.set_halign(Align::Start);
-    waveforms.set_valign(Align::Start);
-    waveforms.set_margin_top(24);
-    waveforms.set_margin_start(24);
-    waveforms.set_margin_end(24);
+    waveforms.append(&waveform_button(command_tx.clone(), WaveForm::Sine));
+    waveforms.append(&waveform_button(command_tx.clone(), WaveForm::Square));
+    waveforms.append(&waveform_button(command_tx.clone(), WaveForm::Saw));
+    waveforms.append(&waveform_button(command_tx.clone(), WaveForm::Triangle));
+    container.append(&waveforms);
 
-    waveforms.append(&button(command_tx.clone(), WaveForm::Sine));
-    waveforms.append(&button(command_tx.clone(), WaveForm::Square));
-    waveforms.append(&button(command_tx.clone(), WaveForm::Saw));
-    waveforms.append(&button(command_tx.clone(), WaveForm::Triangle));
+    let envelope = GtkBox::new(Orientation::Horizontal, 12);
+    {
+        let tx = command_tx.clone();
+        envelope.append(&knob(
+            "Attack [ms]",
+            0.0,
+            2000.0,
+            ATTACK_TIME_DEFAULT.as_millis() as f64,
+            move |v| {
+                let _ = tx.try_send(Command::ChangeSetting(Setting::AttackTime(
+                    Duration::from_millis(v as u64),
+                )));
+            },
+            |v| format!("{:.0}", v),
+        ));
+    }
+    {
+        let tx = command_tx.clone();
+        envelope.append(&knob(
+            "Release [ms]",
+            0.0,
+            5000.0,
+            RELEASE_TIME_DEFAULT.as_millis() as f64,
+            move |v| {
+                let _ = tx.try_send(Command::ChangeSetting(Setting::ReleaseTime(
+                    Duration::from_millis(v as u64),
+                )));
+            },
+            |v| format!("{:.0}", v),
+        ));
+    }
+    container.append(&envelope);
 
-    overlay.add_overlay(&waveforms);
+    overlay.add_overlay(&container);
 }
