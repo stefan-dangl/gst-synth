@@ -7,11 +7,26 @@ pub fn create_pipeline() -> Pipeline {
         .property_from_str("wave", "silence")
         .build()
         .unwrap();
+    // Equalizer bands: band0 = 100Hz, band1 = 1100Hz, band2 = 11kHz, value = [-24;12]
+    let equalizer = gst::ElementFactory::make("equalizer-3bands")
+        .name("audio_equalizer")
+        .property("band0", 0.0f64)
+        .property("band1", 0.0f64)
+        .property("band2", 0.0f64)
+        .build()
+        .unwrap();
+    let band_pass = gst::ElementFactory::make("audiochebband")
+        .name("audio_band_pass")
+        .property("lower-frequency", 100f32)
+        .property("upper-frequency", 10000f32)
+        .property("poles", 8i32)
+        .build()
+        .unwrap();
     let audio_echo = gst::ElementFactory::make("audioecho")
         .name("audio_echo")
         .property("delay", 1_000_000_000u64)
-        .property("intensity", 0.9f32)
-        .property("feedback", 0.9f32)
+        .property("intensity", 0.4f32)
+        .property("feedback", 0.0f32)
         .build()
         .unwrap();
     // TODO: Other interesting effects: audioamplify, audiodynamic, equalizer-3bands, audiocheblimit
@@ -66,6 +81,8 @@ pub fn create_pipeline() -> Pipeline {
     pipeline
         .add_many([
             &audio_source,
+            &equalizer,
+            &band_pass,
             &audio_echo,
             &audio_convert,
             &tee,
@@ -80,7 +97,15 @@ pub fn create_pipeline() -> Pipeline {
         ])
         .unwrap();
 
-    gst::Element::link_many([&audio_source, &audio_echo, &audio_convert, &tee]).unwrap();
+    gst::Element::link_many([
+        &audio_source,
+        &equalizer,
+        &band_pass,
+        &audio_echo,
+        &audio_convert,
+        &tee,
+    ])
+    .unwrap();
     gst::Element::link_many([&audio_queue, &audio_convert_2, &audio_resample, &audio_sink])
         .unwrap();
     gst::Element::link_many([&video_queue, &visual, &video_convert, &video_sink]).unwrap();
