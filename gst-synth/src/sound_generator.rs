@@ -64,7 +64,20 @@ pub async fn sound_generator(
 }
 
 async fn note_release(audio_amplify: Element) {
+    // TODO: make configurable
+    const FADE_OUT_TIME: Duration = Duration::from_millis(1000);
+    const FADE_OUT_STEPS: u32 = 100;
+    let fade_out_sleep_time = FADE_OUT_TIME / FADE_OUT_STEPS;
+
     glib::timeout_future(RELEASE_TIME).await;
     println!("Release time passed");
-    audio_amplify.set_property("amplification", 0.0f32);
+
+    let mut amplification = 1.0f32;
+    while amplification > 0.0 {
+        amplification -= 1.0 / FADE_OUT_STEPS as f32;
+        amplification = amplification.max(0.0);
+        println!("!!! AMPLIFICATION: {amplification}");
+        audio_amplify.set_property("amplification", amplification);
+        glib::timeout_future(fade_out_sleep_time).await;
+    }
 }
