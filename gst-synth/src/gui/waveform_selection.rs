@@ -9,7 +9,9 @@ use gtk::prelude::*;
 use gtk::{Box as GtkBox, Frame, Orientation, Overlay};
 use gtk4 as gtk;
 use gtk4::Align;
+use std::cell::RefCell;
 use std::f64::consts::PI;
+use std::rc::Rc;
 use std::time::Duration;
 
 fn waveform_icon(waveform: WaveForm) -> DrawingArea {
@@ -67,7 +69,11 @@ fn waveform_icon(waveform: WaveForm) -> DrawingArea {
     area
 }
 
-fn waveform_button(command_tx: async_channel::Sender<Command>, waveform: WaveForm) -> Frame {
+fn waveform_button(
+    command_tx: async_channel::Sender<Command>,
+    waveform: WaveForm,
+    selected: Rc<RefCell<Option<Frame>>>,
+) -> Frame {
     let frame = Frame::new(None);
     frame.set_size_request(72, 72);
     frame.add_css_class("black-key");
@@ -75,10 +81,13 @@ fn waveform_button(command_tx: async_channel::Sender<Command>, waveform: WaveFor
 
     let gesture = GestureClick::new();
     {
-        let command_tx = command_tx.clone();
         let frame = frame.clone();
         gesture.connect_pressed(move |_, _, _, _| {
-            frame.add_css_class("active");
+            if let Some(prev) = selected.borrow().as_ref() {
+                prev.remove_css_class("selected");
+            }
+            frame.add_css_class("selected");
+            *selected.borrow_mut() = Some(frame.clone());
             let _ = command_tx.try_send(Command::ChangeWaveForm(waveform));
         });
     }
@@ -94,11 +103,17 @@ pub fn waveform_selection(overlay: &Overlay, command_tx: async_channel::Sender<C
     container.set_margin_start(24);
     container.set_margin_end(24);
 
+    let selected: Rc<RefCell<Option<Frame>>> = Rc::new(RefCell::new(None));
+
     let waveforms = GtkBox::new(Orientation::Horizontal, 12);
-    waveforms.append(&waveform_button(command_tx.clone(), WaveForm::Sine));
-    waveforms.append(&waveform_button(command_tx.clone(), WaveForm::Square));
-    waveforms.append(&waveform_button(command_tx.clone(), WaveForm::Saw));
-    waveforms.append(&waveform_button(command_tx.clone(), WaveForm::Triangle));
+    for wf in [WaveForm::Sine, WaveForm::Square, WaveForm::Saw, WaveForm::Triangle] {
+        let btn = waveform_button(command_tx.clone(), wf, selected.clone());
+        if wf == WaveForm::default() {
+            btn.add_css_class("selected");
+            *selected.borrow_mut() = Some(btn.clone());
+        }
+        waveforms.append(&btn);
+    }
     container.append(&waveforms);
 
     let envelope = GtkBox::new(Orientation::Horizontal, 12);

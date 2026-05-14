@@ -27,8 +27,9 @@ pub enum Note {
     B,
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub enum WaveForm {
+    #[default]
     Sine,
     Square,
     Saw,

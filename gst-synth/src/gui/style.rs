@@ -24,6 +24,14 @@ frame.black-key:hover {
     background: #3a3a3a;
 }
 
+frame.black-key.selected {
+    background: #4a3800;
+}
+
+frame.black-key.selected:hover {
+    background: #5c4600;
+}
+
 label.white-key-label {
     color: #111;
 }
