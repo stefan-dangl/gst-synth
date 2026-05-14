@@ -10,10 +10,18 @@ frame.white-key {
     box-shadow: none;
 }
 
+frame.white-key:hover {
+    background: #d8d8d8;
+}
+
 frame.black-key {
     background: #222;
     border: none;
     box-shadow: none;
+}
+
+frame.black-key:hover {
+    background: #3a3a3a;
 }
 
 label.white-key-label {
