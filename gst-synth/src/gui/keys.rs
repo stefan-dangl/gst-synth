@@ -112,13 +112,13 @@ pub fn keyboard(overlay: &Overlay, command_tx: async_channel::Sender<Command>) {
     tones.set_margin_start(24);
     tones.set_margin_end(24);
 
-    tones.append(&key(command_tx.clone(), Note::C, "C", Color::White));
-    tones.append(&key(command_tx.clone(), Note::D, "D", Color::White));
-    tones.append(&key(command_tx.clone(), Note::E, "E", Color::White));
+    tones.append(&key(command_tx.clone(), Note::C, "A", Color::White));
+    tones.append(&key(command_tx.clone(), Note::D, "S", Color::White));
+    tones.append(&key(command_tx.clone(), Note::E, "D", Color::White));
     tones.append(&key(command_tx.clone(), Note::F, "F", Color::White));
     tones.append(&key(command_tx.clone(), Note::G, "G", Color::White));
-    tones.append(&key(command_tx.clone(), Note::A, "A", Color::White));
-    tones.append(&key(command_tx.clone(), Note::B, "B", Color::White));
+    tones.append(&key(command_tx.clone(), Note::A, "H", Color::White));
+    tones.append(&key(command_tx.clone(), Note::B, "J", Color::White));
 
     overlay.add_overlay(&tones);
 
@@ -128,12 +128,12 @@ pub fn keyboard(overlay: &Overlay, command_tx: async_channel::Sender<Command>) {
     semitones.set_margin_bottom(88);
     semitones.set_margin_start(66);
 
-    semitones.append(&key(command_tx.clone(), Note::CSharp, "C#", Color::Black));
-    semitones.append(&key(command_tx.clone(), Note::DSharp, "D#", Color::Black));
+    semitones.append(&key(command_tx.clone(), Note::CSharp, "W", Color::Black));
+    semitones.append(&key(command_tx.clone(), Note::DSharp, "E", Color::Black));
     semitones.append(&placeholder_key());
-    semitones.append(&key(command_tx.clone(), Note::FSharp, "F#", Color::Black));
-    semitones.append(&key(command_tx.clone(), Note::GSharp, "G#", Color::Black));
-    semitones.append(&key(command_tx.clone(), Note::ASharp, "A#", Color::Black));
+    semitones.append(&key(command_tx.clone(), Note::FSharp, "T", Color::Black));
+    semitones.append(&key(command_tx.clone(), Note::GSharp, "Y", Color::Black));
+    semitones.append(&key(command_tx.clone(), Note::ASharp, "U", Color::Black));
     semitones.append(&placeholder_key());
 
     overlay.add_overlay(&semitones);
