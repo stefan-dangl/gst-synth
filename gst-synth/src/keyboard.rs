@@ -1,48 +1,45 @@
 use crate::types::{Command, Note, WaveForm};
-use std::{io, thread, time};
-use termion::{event::Key, input::TermRead, raw::IntoRawMode};
+use gtk4::{self as gtk, gdk, glib, prelude::*};
 
-pub fn handle_keyboard(command_tx: async_channel::Sender<Command>) {
-    let _stdout = io::stdout().into_raw_mode().unwrap();
-    let mut stdin = termion::async_stdin().keys();
+pub fn attach_keyboard_handler(
+    window: &gtk::ApplicationWindow,
+    command_tx: async_channel::Sender<Command>,
+) {
+    let key_controller = gtk::EventControllerKey::new();
+    key_controller.connect_key_pressed(move |_, key, _, _| {
+        let command = match key {
+            gdk::Key::q => Command::Quit,
 
-    loop {
-        if let Some(Ok(input)) = stdin.next() {
-            let command = match input {
-                Key::Char('q') => Command::Quit,
+            gdk::Key::a => Command::ChangeNote(Note::C),
+            gdk::Key::w => Command::ChangeNote(Note::CSharp),
+            gdk::Key::s => Command::ChangeNote(Note::D),
+            gdk::Key::e => Command::ChangeNote(Note::DSharp),
+            gdk::Key::d => Command::ChangeNote(Note::E),
+            gdk::Key::f => Command::ChangeNote(Note::F),
+            gdk::Key::t => Command::ChangeNote(Note::FSharp),
+            gdk::Key::g => Command::ChangeNote(Note::G),
+            gdk::Key::z | gdk::Key::y => Command::ChangeNote(Note::GSharp),
+            gdk::Key::h => Command::ChangeNote(Note::A),
+            gdk::Key::u => Command::ChangeNote(Note::ASharp),
+            gdk::Key::j => Command::ChangeNote(Note::B),
 
-                Key::Char('a') => Command::ChangeNote(Note::C),
-                Key::Char('w') => Command::ChangeNote(Note::CSharp),
-                Key::Char('s') => Command::ChangeNote(Note::D),
-                Key::Char('e') => Command::ChangeNote(Note::DSharp),
-                Key::Char('d') => Command::ChangeNote(Note::E),
-                Key::Char('f') => Command::ChangeNote(Note::F),
-                Key::Char('t') => Command::ChangeNote(Note::FSharp),
-                Key::Char('g') => Command::ChangeNote(Note::G),
-                Key::Char('z' | 'y') => Command::ChangeNote(Note::GSharp), // y to support german keyboards
-                Key::Char('h') => Command::ChangeNote(Note::A),
-                Key::Char('u') => Command::ChangeNote(Note::ASharp),
-                Key::Char('j') => Command::ChangeNote(Note::B),
+            gdk::Key::v => Command::ChangeWaveForm(WaveForm::Sine),
+            gdk::Key::b => Command::ChangeWaveForm(WaveForm::Square),
+            gdk::Key::n => Command::ChangeWaveForm(WaveForm::Saw),
+            gdk::Key::m => Command::ChangeWaveForm(WaveForm::Triangle),
 
-                Key::Char('v') => Command::ChangeWaveForm(WaveForm::Sine),
-                Key::Char('b') => Command::ChangeWaveForm(WaveForm::Square),
-                Key::Char('n') => Command::ChangeWaveForm(WaveForm::Saw),
-                Key::Char('m') => Command::ChangeWaveForm(WaveForm::Triangle),
+            gdk::Key::_1 => Command::ChangeOctave(1),
+            gdk::Key::_2 => Command::ChangeOctave(2),
+            gdk::Key::_3 => Command::ChangeOctave(3),
+            gdk::Key::_4 => Command::ChangeOctave(4),
+            gdk::Key::_5 => Command::ChangeOctave(5),
+            gdk::Key::_6 => Command::ChangeOctave(6),
+            gdk::Key::_7 => Command::ChangeOctave(7),
 
-                Key::Char('1') => Command::ChangeOctave(1),
-                Key::Char('2') => Command::ChangeOctave(2),
-                Key::Char('3') => Command::ChangeOctave(3),
-                Key::Char('4') => Command::ChangeOctave(4),
-                Key::Char('5') => Command::ChangeOctave(5),
-                Key::Char('6') => Command::ChangeOctave(6),
-                Key::Char('7') => Command::ChangeOctave(7),
-                _ => continue,
-            };
-            command_tx
-                .send_blocking(command)
-                .expect("failed to send data through channel");
-        }
-
-        thread::sleep(time::Duration::from_millis(5));
-    }
+            _ => return glib::Propagation::Proceed,
+        };
+        let _ = command_tx.send_blocking(command);
+        glib::Propagation::Stop
+    });
+    window.add_controller(key_controller);
 }

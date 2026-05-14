@@ -4,6 +4,7 @@ use crate::gui::octave_selection::octave_selection;
 use crate::gui::style::style;
 use crate::gui::visualization::visualization;
 use crate::gui::waveform_selection::waveform_selection;
+use crate::keyboard::attach_keyboard_handler;
 use crate::types::Command;
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, Overlay, glib};
@@ -43,6 +44,8 @@ pub fn draw_gui(
         octave_selection(&overlay, command_tx.clone());
         keyboard(&overlay, command_tx.clone());
         window.set_child(Some(&overlay));
+
+        attach_keyboard_handler(&window, command_tx.clone());
 
         gtk::style_context_add_provider_for_display(
             &gtk::prelude::WidgetExt::display(&window),

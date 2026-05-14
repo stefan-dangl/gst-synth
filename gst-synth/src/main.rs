@@ -1,8 +1,5 @@
-use crate::{
-    gui::draw_gui, keyboard::handle_keyboard, pipeline::create_pipeline, processor::process,
-};
+use crate::{gui::draw_gui, pipeline::create_pipeline, processor::process};
 use gst::{State, prelude::*};
-use std::thread;
 
 mod gui;
 mod keyboard;
@@ -41,7 +38,6 @@ fn main() {
     });
 
     draw_gui(command_tx.clone(), video_sink, effect_bin);
-    thread::spawn(move || handle_keyboard(command_tx));
     main_loop.run();
 
     pipeline
