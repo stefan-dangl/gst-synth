@@ -1,45 +1,98 @@
 use crate::types::{Command, Note, WaveForm};
 use gtk4::{self as gtk, gdk, glib, prelude::*};
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::time::Duration;
+
+const REPEAT_INTERVAL: Duration = Duration::from_millis(5);
+
+fn key_to_command(key: gdk::Key) -> Option<Command> {
+    match key {
+        gdk::Key::q => Some(Command::Quit),
+
+        gdk::Key::a => Some(Command::ChangeNote(Note::C)),
+        gdk::Key::w => Some(Command::ChangeNote(Note::CSharp)),
+        gdk::Key::s => Some(Command::ChangeNote(Note::D)),
+        gdk::Key::e => Some(Command::ChangeNote(Note::DSharp)),
+        gdk::Key::d => Some(Command::ChangeNote(Note::E)),
+        gdk::Key::f => Some(Command::ChangeNote(Note::F)),
+        gdk::Key::t => Some(Command::ChangeNote(Note::FSharp)),
+        gdk::Key::g => Some(Command::ChangeNote(Note::G)),
+        gdk::Key::z | gdk::Key::y => Some(Command::ChangeNote(Note::GSharp)),
+        gdk::Key::h => Some(Command::ChangeNote(Note::A)),
+        gdk::Key::u => Some(Command::ChangeNote(Note::ASharp)),
+        gdk::Key::j => Some(Command::ChangeNote(Note::B)),
+
+        gdk::Key::v => Some(Command::ChangeWaveForm(WaveForm::Sine)),
+        gdk::Key::b => Some(Command::ChangeWaveForm(WaveForm::Square)),
+        gdk::Key::n => Some(Command::ChangeWaveForm(WaveForm::Saw)),
+        gdk::Key::m => Some(Command::ChangeWaveForm(WaveForm::Triangle)),
+
+        gdk::Key::_1 => Some(Command::ChangeOctave(1)),
+        gdk::Key::_2 => Some(Command::ChangeOctave(2)),
+        gdk::Key::_3 => Some(Command::ChangeOctave(3)),
+        gdk::Key::_4 => Some(Command::ChangeOctave(4)),
+        gdk::Key::_5 => Some(Command::ChangeOctave(5)),
+        gdk::Key::_6 => Some(Command::ChangeOctave(6)),
+        gdk::Key::_7 => Some(Command::ChangeOctave(7)),
+
+        _ => None,
+    }
+}
 
 pub fn attach_keyboard_handler(
     window: &gtk::ApplicationWindow,
     command_tx: async_channel::Sender<Command>,
 ) {
     let key_controller = gtk::EventControllerKey::new();
-    key_controller.connect_key_pressed(move |_, key, _, _| {
-        let command = match key {
-            gdk::Key::q => Command::Quit,
 
-            gdk::Key::a => Command::ChangeNote(Note::C),
-            gdk::Key::w => Command::ChangeNote(Note::CSharp),
-            gdk::Key::s => Command::ChangeNote(Note::D),
-            gdk::Key::e => Command::ChangeNote(Note::DSharp),
-            gdk::Key::d => Command::ChangeNote(Note::E),
-            gdk::Key::f => Command::ChangeNote(Note::F),
-            gdk::Key::t => Command::ChangeNote(Note::FSharp),
-            gdk::Key::g => Command::ChangeNote(Note::G),
-            gdk::Key::z | gdk::Key::y => Command::ChangeNote(Note::GSharp),
-            gdk::Key::h => Command::ChangeNote(Note::A),
-            gdk::Key::u => Command::ChangeNote(Note::ASharp),
-            gdk::Key::j => Command::ChangeNote(Note::B),
+    let active_key: Rc<RefCell<Option<gdk::Key>>> = Rc::new(RefCell::new(None));
+    let repeat_source: Rc<RefCell<Option<glib::SourceId>>> = Rc::new(RefCell::new(None));
 
-            gdk::Key::v => Command::ChangeWaveForm(WaveForm::Sine),
-            gdk::Key::b => Command::ChangeWaveForm(WaveForm::Square),
-            gdk::Key::n => Command::ChangeWaveForm(WaveForm::Saw),
-            gdk::Key::m => Command::ChangeWaveForm(WaveForm::Triangle),
+    {
+        let command_tx = command_tx.clone();
+        let active_key = active_key.clone();
+        let repeat_source = repeat_source.clone();
 
-            gdk::Key::_1 => Command::ChangeOctave(1),
-            gdk::Key::_2 => Command::ChangeOctave(2),
-            gdk::Key::_3 => Command::ChangeOctave(3),
-            gdk::Key::_4 => Command::ChangeOctave(4),
-            gdk::Key::_5 => Command::ChangeOctave(5),
-            gdk::Key::_6 => Command::ChangeOctave(6),
-            gdk::Key::_7 => Command::ChangeOctave(7),
+        key_controller.connect_key_pressed(move |_, key, _, _| {
+            // Suppress OS auto-repeat events — we manage our own repeat timer
+            if active_key.borrow().as_ref() == Some(&key) {
+                return glib::Propagation::Stop;
+            }
 
-            _ => return glib::Propagation::Proceed,
-        };
-        let _ = command_tx.send_blocking(command);
-        glib::Propagation::Stop
-    });
+            let Some(command) = key_to_command(key) else {
+                return glib::Propagation::Proceed;
+            };
+
+            // A different key was pressed while another was held: cancel the old timer
+            if let Some(id) = repeat_source.borrow_mut().take() {
+                id.remove();
+            }
+            *active_key.borrow_mut() = Some(key);
+
+            let _ = command_tx.try_send(command);
+
+            let command_tx = command_tx.clone();
+            let id = glib::timeout_add_local(REPEAT_INTERVAL, move || {
+                let _ = command_tx.try_send(command);
+                glib::ControlFlow::Continue
+            });
+            *repeat_source.borrow_mut() = Some(id);
+
+            glib::Propagation::Stop
+        });
+    }
+
+    {
+        key_controller.connect_key_released(move |_, key, _, _| {
+            if active_key.borrow().as_ref() == Some(&key) {
+                *active_key.borrow_mut() = None;
+                if let Some(id) = repeat_source.borrow_mut().take() {
+                    id.remove();
+                }
+            }
+        });
+    }
+
     window.add_controller(key_controller);
 }

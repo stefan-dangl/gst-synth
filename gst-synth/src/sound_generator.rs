@@ -65,7 +65,7 @@ pub async fn sound_generator(
 
 async fn note_release(audio_amplify: Element) {
     // TODO: make configurable
-    const FADE_OUT_TIME: Duration = Duration::from_millis(1000);
+    const FADE_OUT_TIME: Duration = Duration::from_millis(3000);
     const FADE_OUT_STEPS: u32 = 100;
     let fade_out_sleep_time = FADE_OUT_TIME / FADE_OUT_STEPS;
 
