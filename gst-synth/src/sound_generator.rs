@@ -5,8 +5,9 @@ use std::time::Duration;
 
 const RELEASE_TIME: Duration = Duration::from_millis(50);
 
-pub async fn process(
+pub async fn sound_generator(
     audio_source: Element,
+    audio_amplify: Element,
     command_rx: async_channel::Receiver<Command>,
     main_context: MainContext,
 ) {
@@ -39,10 +40,11 @@ pub async fn process(
                     Note::ASharp => 29.14,
                     Note::B => 30.87,
                 };
-                audio_source.set_property_from_str("wave", wave_form);
+                audio_source.set_property_from_str("wave", wave_form); // TODO_SD: Move
+                audio_amplify.set_property("amplification", 1.0f32);
                 audio_source.set_property("freq", freq * 2.0_f64.powi(octave as i32));
                 note_release_task
-                    .replace(main_context.spawn_local(note_release(audio_source.clone())));
+                    .replace(main_context.spawn_local(note_release(audio_amplify.clone())));
             }
 
             Command::ChangeWaveForm(wave) => {
@@ -61,8 +63,8 @@ pub async fn process(
     }
 }
 
-async fn note_release(audio_source: Element) {
+async fn note_release(audio_amplify: Element) {
     glib::timeout_future(RELEASE_TIME).await;
     println!("Release time passed");
-    audio_source.set_property_from_str("wave", "silence");
+    audio_amplify.set_property("amplification", 0.0f32);
 }

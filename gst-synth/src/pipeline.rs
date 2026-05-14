@@ -1,12 +1,20 @@
 use gst::{Pipeline, prelude::*};
 
 pub fn create_pipeline() -> Pipeline {
+    // Audio Source
     let audio_source = gst::ElementFactory::make("audiotestsrc")
         .name("audio_source")
         .property("is-live", true)
         .property_from_str("wave", "silence")
         .build()
         .unwrap();
+    let audio_amplify = gst::ElementFactory::make("audioamplify")
+        .name("audio_amplify")
+        .property("amplification", 1.0f32)
+        .build()
+        .unwrap();
+
+    // Audio effects
     // Equalizer bands: band0 = 100Hz, band1 = 1100Hz, band2 = 11kHz, value = [-24;12]
     let equalizer = gst::ElementFactory::make("equalizer-3bands")
         .name("audio_equalizer")
@@ -34,6 +42,7 @@ pub fn create_pipeline() -> Pipeline {
         .name("audio_convert")
         .build()
         .unwrap();
+
     let tee = gst::ElementFactory::make("tee")
         .name("tee")
         .build()
@@ -93,6 +102,7 @@ pub fn create_pipeline() -> Pipeline {
     pipeline
         .add_many([
             &audio_source,
+            &audio_amplify,
             effect_bin.upcast_ref::<gst::Element>(),
             &audio_convert,
             &tee,
@@ -109,6 +119,7 @@ pub fn create_pipeline() -> Pipeline {
 
     gst::Element::link_many([
         &audio_source,
+        &audio_amplify,
         effect_bin.upcast_ref::<gst::Element>(),
         &audio_convert,
         &tee,

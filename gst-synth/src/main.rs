@@ -1,10 +1,10 @@
-use crate::{gui::draw_gui, pipeline::create_pipeline, processor::process};
+use crate::{gui::draw_gui, pipeline::create_pipeline, sound_generator::sound_generator};
 use gst::{State, prelude::*};
 
 mod gui;
 mod keyboard;
 mod pipeline;
-mod processor;
+mod sound_generator;
 mod types;
 
 fn main() {
@@ -22,6 +22,9 @@ fn main() {
     let audio_source = pipeline
         .by_name("audio_source")
         .expect("audio_source not found");
+    let audio_amplify = pipeline
+        .by_name("audio_amplify")
+        .expect("audio_amplify not found");
     let video_sink = pipeline
         .by_name("video_sink")
         .expect("video_sink not found");
@@ -33,7 +36,7 @@ fn main() {
     let main_loop_clone = main_loop.clone();
     let main_context_clone = main_context.clone();
     main_context.spawn_local(async move {
-        process(audio_source, command_rx, main_context_clone).await;
+        sound_generator(audio_source, audio_amplify, command_rx, main_context_clone).await;
         main_loop_clone.quit();
     });
 
