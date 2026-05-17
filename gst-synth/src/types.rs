@@ -1,5 +1,8 @@
 use std::time::Duration;
 
+// GUI - Related
+pub const GUI_TITLE: &str = "Gst - Synth";
+
 // Default Settings
 pub const OCTAVE_DEFAULT: usize = 4;
 pub const RELEASE_TIME_DEFAULT: Duration = Duration::from_millis(3000);

@@ -5,9 +5,12 @@ use crate::gui::style::style;
 use crate::gui::visualization::visualization;
 use crate::gui::waveform_selection::waveform_selection;
 use crate::keyboard::attach_keyboard_handler;
-use crate::types::Command;
+use crate::types::{Command, GUI_TITLE};
 use gtk::prelude::*;
-use gtk::{Application, ApplicationWindow, Box as GtkBox, Orientation, Overlay, SizeGroup, SizeGroupMode, glib};
+use gtk::{
+    Application, ApplicationWindow, Box as GtkBox, Orientation, Overlay, SizeGroup, SizeGroupMode,
+    glib,
+};
 use gtk4 as gtk;
 use gtk4::Align;
 
@@ -31,7 +34,7 @@ pub fn draw_gui(
     application.connect_activate(move |app| {
         let window = ApplicationWindow::builder()
             .application(app)
-            .title("First GTK Program")
+            .title(GUI_TITLE)
             .default_width(1600)
             .default_height(600)
             .build();
