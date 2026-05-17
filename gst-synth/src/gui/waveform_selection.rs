@@ -6,9 +6,8 @@ use crate::types::{
 use gtk::DrawingArea;
 use gtk::GestureClick;
 use gtk::prelude::*;
-use gtk::{Box as GtkBox, Frame, Orientation, Overlay};
+use gtk::{Box as GtkBox, Frame, Orientation};
 use gtk4 as gtk;
-use gtk4::Align;
 use std::cell::RefCell;
 use std::f64::consts::PI;
 use std::rc::Rc;
@@ -95,17 +94,20 @@ fn waveform_button(
     frame
 }
 
-pub fn waveform_selection(overlay: &Overlay, command_tx: async_channel::Sender<Command>) {
-    let container = GtkBox::new(Orientation::Vertical, 12);
-    container.set_halign(Align::Start);
-    container.set_valign(Align::Start);
-    container.set_margin_top(24);
-    container.set_margin_start(24);
-    container.set_margin_end(24);
+pub fn waveform_selection(command_tx: async_channel::Sender<Command>) -> Frame {
+    let frame = Frame::new(Some("Waveform"));
+    frame.add_css_class("effect-section");
+
+    let inner = GtkBox::new(Orientation::Vertical, 8);
+    inner.set_margin_top(8);
+    inner.set_margin_bottom(8);
+    inner.set_margin_start(8);
+    inner.set_margin_end(8);
 
     let selected: Rc<RefCell<Option<Frame>>> = Rc::new(RefCell::new(None));
 
     let waveforms = GtkBox::new(Orientation::Horizontal, 12);
+    waveforms.set_halign(gtk4::Align::Center);
     for wf in [WaveForm::Sine, WaveForm::Square, WaveForm::Saw, WaveForm::Triangle] {
         let btn = waveform_button(command_tx.clone(), wf, selected.clone());
         if wf == WaveForm::default() {
@@ -114,9 +116,10 @@ pub fn waveform_selection(overlay: &Overlay, command_tx: async_channel::Sender<C
         }
         waveforms.append(&btn);
     }
-    container.append(&waveforms);
+    inner.append(&waveforms);
 
     let envelope = GtkBox::new(Orientation::Horizontal, 12);
+    envelope.set_halign(gtk4::Align::Center);
     {
         let tx = command_tx.clone();
         envelope.append(&knob(
@@ -149,7 +152,8 @@ pub fn waveform_selection(overlay: &Overlay, command_tx: async_channel::Sender<C
             |v| format!("{:.0}", v),
         ));
     }
-    container.append(&envelope);
+    inner.append(&envelope);
 
-    overlay.add_overlay(&container);
+    frame.set_child(Some(&inner));
+    frame
 }
