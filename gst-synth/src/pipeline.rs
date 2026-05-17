@@ -1,24 +1,50 @@
 use gst::{Pipeline, prelude::*};
 
+use crate::types::WAVEFORM_DEFAULT;
+
 pub fn create_pipeline() -> Pipeline {
+    // Audio Source
     let audio_source = gst::ElementFactory::make("audiotestsrc")
         .name("audio_source")
         .property("is-live", true)
-        .property_from_str("wave", "silence")
+        .property_from_str("wave", WAVEFORM_DEFAULT)
         .build()
         .unwrap();
-    let audio_echo = gst::ElementFactory::make("audioecho")
+    let audio_amplify = gst::ElementFactory::make("audioamplify")
+        .name("audio_amplify")
+        .property("amplification", 0.0f32)
+        .build()
+        .unwrap();
+
+    // Audio effects
+    // Equalizer bands: band0 = 100Hz, band1 = 1100Hz, band2 = 11kHz, value = [-24;12]
+    let equalizer = gst::ElementFactory::make("equalizer-3bands")
+        .name("audio_equalizer")
+        .property("band0", 0.0f64)
+        .property("band1", 0.0f64)
+        .property("band2", 0.0f64)
+        .build()
+        .unwrap();
+    let band_pass = gst::ElementFactory::make("audiochebband")
+        .name("audio_band_pass")
+        .property("lower-frequency", 0f32)
+        .property("upper-frequency", 20000f32)
+        .property("poles", 4i32)
+        .build()
+        .unwrap();
+    let echo = gst::ElementFactory::make("audioecho")
         .name("audio_echo")
-        .property("delay", 1_000_000_000u64)
-        .property("intensity", 0.9f32)
-        .property("feedback", 0.9f32)
+        .property("max-delay", 3_000_000_000u64)
+        .property("delay", 1u64)
+        .property("intensity", 0.4f32)
+        .property("feedback", 0.4f32)
         .build()
         .unwrap();
-    // TODO: Other interesting effects: audioamplify, audiodynamic, equalizer-3bands, audiocheblimit
     let audio_convert = gst::ElementFactory::make("audioconvert")
         .name("audio_convert")
         .build()
         .unwrap();
+
     let tee = gst::ElementFactory::make("tee")
         .name("tee")
         .build()
@@ -63,10 +89,23 @@ pub fn create_pipeline() -> Pipeline {
 
     let pipeline = gst::Pipeline::with_name("test-pipeline");
 
+    let effect_bin = gst::Bin::with_name("effect_bin");
+    effect_bin
+        .add_many([&equalizer, &band_pass, &echo])
+        .unwrap();
+    gst::Element::link_many([&equalizer, &band_pass, &echo]).unwrap();
+    effect_bin
+        .add_pad(&gst::GhostPad::with_target(&equalizer.static_pad("sink").unwrap()).unwrap())
+        .unwrap();
+    effect_bin
+        .add_pad(&gst::GhostPad::with_target(&echo.static_pad("src").unwrap()).unwrap())
+        .unwrap();
+
     pipeline
         .add_many([
             &audio_source,
-            &audio_echo,
+            &audio_amplify,
+            effect_bin.upcast_ref::<gst::Element>(),
             &audio_convert,
             &tee,
             &audio_queue,
@@ -80,7 +119,14 @@ pub fn create_pipeline() -> Pipeline {
         ])
         .unwrap();
 
-    gst::Element::link_many([&audio_source, &audio_echo, &audio_convert, &tee]).unwrap();
+    gst::Element::link_many([
+        &audio_source,
+        &audio_amplify,
+        effect_bin.upcast_ref::<gst::Element>(),
+        &audio_convert,
+        &tee,
+    ])
+    .unwrap();
     gst::Element::link_many([&audio_queue, &audio_convert_2, &audio_resample, &audio_sink])
         .unwrap();
     gst::Element::link_many([&video_queue, &visual, &video_convert, &video_sink]).unwrap();

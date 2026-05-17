@@ -10,10 +10,26 @@ frame.white-key {
     box-shadow: none;
 }
 
+frame.white-key:hover {
+    background: #d8d8d8;
+}
+
 frame.black-key {
     background: #222;
     border: none;
     box-shadow: none;
+}
+
+frame.black-key:hover {
+    background: #3a3a3a;
+}
+
+frame.black-key.selected {
+    background: #4a3800;
+}
+
+frame.black-key.selected:hover {
+    background: #5c4600;
 }
 
 label.white-key-label {
@@ -27,6 +43,27 @@ label.black-key-label {
 label.octave-value {
     color: #fff;
     font-size: 24px;
+    font-weight: bold;
+}
+
+label.knob-label {
+    color: #aaa;
+    font-size: 10px;
+}
+
+label.knob-value {
+    color: #ddd;
+    font-size: 10px;
+}
+
+frame.effect-section {
+    background-color: rgba(30, 30, 30, 0.85);
+    border-radius: 4px;
+}
+
+frame.effect-section > label {
+    color: #fff;
+    font-size: 11px;
     font-weight: bold;
 }
 "#,
