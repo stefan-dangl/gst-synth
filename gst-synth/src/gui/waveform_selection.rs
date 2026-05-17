@@ -124,6 +124,7 @@ pub fn waveform_selection(overlay: &Overlay, command_tx: async_channel::Sender<C
             0.0,
             2000.0,
             ATTACK_TIME_DEFAULT.as_millis() as f64,
+            false,
             move |v| {
                 let _ = tx.try_send(Command::ChangeSetting(Setting::AttackTime(
                     Duration::from_millis(v as u64),
@@ -139,6 +140,7 @@ pub fn waveform_selection(overlay: &Overlay, command_tx: async_channel::Sender<C
             0.0,
             5000.0,
             RELEASE_TIME_DEFAULT.as_millis() as f64,
+            false,
             move |v| {
                 let _ = tx.try_send(Command::ChangeSetting(Setting::ReleaseTime(
                     Duration::from_millis(v as u64),

@@ -40,9 +40,10 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
             let e = bp.clone();
             knob(
                 "Lower",
-                0.0,
+                20.0,
                 20000.0,
-                lower_init,
+                lower_init.max(20.0),
+                true,
                 move |v| e.set_property("lower-frequency", v as f32),
                 |v| format!("{:.0}", v),
             )
@@ -54,6 +55,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 -24.0,
                 12.0,
                 band0_init,
+                false,
                 move |v| e.set_property("band0", v),
                 |v| format!("{:.1}", v),
             )
@@ -65,6 +67,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 -24.0,
                 12.0,
                 band1_init,
+                false,
                 move |v| e.set_property("band1", v),
                 |v| format!("{:.1}", v),
             )
@@ -76,6 +79,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 -24.0,
                 12.0,
                 band2_init,
+                false,
                 move |v| e.set_property("band2", v),
                 |v| format!("{:.1}", v),
             )
@@ -84,9 +88,10 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
             let e = bp.clone();
             knob(
                 "Upper",
-                0.0,
+                20.0,
                 20000.0,
-                upper_init,
+                upper_init.max(20.0),
+                true,
                 move |v| e.set_property("upper-frequency", v as f32),
                 |v| format!("{:.0}", v),
             )
@@ -101,6 +106,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 0.1,
                 3000.0,
                 delay_init,
+                false,
                 move |v| e.set_property("delay", (v * 1_000_000.0) as u64),
                 |v| format!("{:.0}", v),
             )
@@ -112,6 +118,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 0.0,
                 1.0,
                 intensity_init,
+                false,
                 move |v| e.set_property("intensity", v as f32),
                 |v| format!("{:.2}", v),
             )
@@ -123,6 +130,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 0.0,
                 1.0,
                 feedback_init,
+                false,
                 move |v| e.set_property("feedback", v as f32),
                 |v| format!("{:.2}", v),
             )
