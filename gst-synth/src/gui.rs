@@ -69,10 +69,10 @@ pub fn draw_gui(
 
         effects(&overlay, effect_bin.clone());
         octave_selection(&overlay, command_tx.clone());
-        keyboard(&overlay, command_tx.clone());
+        let key_map = keyboard(&overlay, command_tx.clone());
         window.set_child(Some(&overlay));
 
-        attach_keyboard_handler(&window, command_tx.clone());
+        attach_keyboard_handler(&window, command_tx.clone(), key_map);
 
         gtk::style_context_add_provider_for_display(
             &gtk::prelude::WidgetExt::display(&window),

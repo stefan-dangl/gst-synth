@@ -17,7 +17,7 @@ pub const OCTAVE_MIN: usize = 1;
 pub const OCTAVE_MAX: usize = 7;
 pub const MAX_AMPLIFICATION: f32 = 0.5;
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Note {
     C,
     CSharp,

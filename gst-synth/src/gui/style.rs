@@ -14,6 +14,10 @@ frame.white-key:hover {
     background: #d8d8d8;
 }
 
+frame.white-key.active {
+    background: #f0b84a;
+}
+
 frame.black-key {
     background: #222;
     border: none;
@@ -22,6 +26,10 @@ frame.black-key {
 
 frame.black-key:hover {
     background: #3a3a3a;
+}
+
+frame.black-key.active {
+    background: #7a5200;
 }
 
 frame.black-key.selected {
