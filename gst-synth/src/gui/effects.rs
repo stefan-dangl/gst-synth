@@ -39,7 +39,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
         {
             let e = bp.clone();
             knob(
-                "Lower",
+                "Lower [Hz]",
                 20.0,
                 20000.0,
                 lower_init.max(20.0),
@@ -87,7 +87,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
         {
             let e = bp.clone();
             knob(
-                "Upper",
+                "Upper [Hz]",
                 20.0,
                 20000.0,
                 upper_init.max(20.0),

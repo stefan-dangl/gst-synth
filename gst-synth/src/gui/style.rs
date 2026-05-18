@@ -48,12 +48,12 @@ label.octave-value {
 
 label.knob-label {
     color: #aaa;
-    font-size: 10px;
+    font-size: 12px;
 }
 
 label.knob-value {
     color: #ddd;
-    font-size: 10px;
+    font-size: 12px;
 }
 
 frame.effect-section {

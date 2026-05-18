@@ -72,7 +72,7 @@ pub fn knob(
     container.set_margin_start(4);
     container.set_margin_end(4);
 
-    let header = GtkBox::new(Orientation::Horizontal, 4);
+    let header = GtkBox::new(Orientation::Vertical, 2);
     header.set_halign(Align::Center);
     let lbl = Label::new(Some(label_text));
     lbl.add_css_class("knob-label");
