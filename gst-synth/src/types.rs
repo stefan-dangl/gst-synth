@@ -7,7 +7,10 @@ pub const GUI_TITLE: &str = "Gst - Synth";
 pub const OCTAVE_DEFAULT: usize = 4;
 pub const RELEASE_TIME_DEFAULT: Duration = Duration::from_millis(3000);
 pub const ATTACK_TIME_DEFAULT: Duration = Duration::from_millis(100);
-pub const WAVEFORM_DEFAULT: &str = "sine";
+pub const WAVEFORM_DEFAULT: &str = "saw";
+pub const DEFAULT_ECHO_DELAY: f64 = 550.0;
+pub const DEFAULT_ECHO_INTENSITY: f64 = 0.2;
+pub const DEFAULT_ECHO_FEEDBACK: f64 = 0.4;
 
 // Ranges
 pub const OCTAVE_MIN: usize = 1;
@@ -32,9 +35,9 @@ pub enum Note {
 
 #[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub enum WaveForm {
-    #[default]
     Sine,
     Square,
+    #[default]
     Saw,
     Triangle,
 }

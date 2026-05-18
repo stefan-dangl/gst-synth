@@ -1,8 +1,5 @@
 use super::knob::knob;
-use crate::types::{
-    ATTACK_TIME_DEFAULT, RELEASE_TIME_DEFAULT,
-    Command, Setting, WaveForm,
-};
+use crate::types::{ATTACK_TIME_DEFAULT, Command, RELEASE_TIME_DEFAULT, Setting, WaveForm};
 use gtk::DrawingArea;
 use gtk::GestureClick;
 use gtk::prelude::*;
@@ -108,7 +105,12 @@ pub fn waveform_selection(command_tx: async_channel::Sender<Command>) -> Frame {
 
     let waveforms = GtkBox::new(Orientation::Horizontal, 12);
     waveforms.set_halign(gtk4::Align::Center);
-    for wf in [WaveForm::Sine, WaveForm::Square, WaveForm::Saw, WaveForm::Triangle] {
+    for wf in [
+        WaveForm::Saw,
+        WaveForm::Square,
+        WaveForm::Triangle,
+        WaveForm::Sine,
+    ] {
         let btn = waveform_button(command_tx.clone(), wf, selected.clone());
         if wf == WaveForm::default() {
             btn.add_css_class("selected");

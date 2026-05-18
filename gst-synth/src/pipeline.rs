@@ -1,6 +1,8 @@
 use gst::{Pipeline, prelude::*};
 
-use crate::types::WAVEFORM_DEFAULT;
+use crate::types::{
+    DEFAULT_ECHO_DELAY, DEFAULT_ECHO_FEEDBACK, DEFAULT_ECHO_INTENSITY, WAVEFORM_DEFAULT,
+};
 
 pub fn create_pipeline() -> Pipeline {
     // Audio Source
@@ -35,9 +37,9 @@ pub fn create_pipeline() -> Pipeline {
     let echo = gst::ElementFactory::make("audioecho")
         .name("audio_echo")
         .property("max-delay", 3_000_000_000u64)
-        .property("delay", 1u64)
-        .property("intensity", 0.4f32)
-        .property("feedback", 0.4f32)
+        .property("delay", (DEFAULT_ECHO_DELAY * 1_000_000.0) as u64)
+        .property("intensity", DEFAULT_ECHO_INTENSITY as f32)
+        .property("feedback", DEFAULT_ECHO_FEEDBACK as f32)
         .build()
         .unwrap();
     let audio_convert = gst::ElementFactory::make("audioconvert")
