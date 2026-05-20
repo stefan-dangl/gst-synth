@@ -11,14 +11,18 @@ pub const KNOB_SIZE: i32 = 72;
 const KNOB_START: f64 = PI * 0.75;
 const KNOB_SWEEP: f64 = PI * 1.5;
 
-pub fn draw_knob(cr: &cairo::Context, w: i32, h: i32, value: f64, min: f64, max: f64) {
+pub fn draw_knob(cr: &cairo::Context, w: i32, h: i32, value: f64, min: f64, max: f64, logarithmic: bool) {
     let cx = w as f64 / 2.0;
     let cy = h as f64 / 2.0;
     let r = cx.min(cy) - 3.0;
     let track_r = r - 8.0;
 
     let t = if max > min {
-        ((value - min) / (max - min)).clamp(0.0, 1.0)
+        if logarithmic && min > 0.0 {
+            ((value.ln() - min.ln()) / (max.ln() - min.ln())).clamp(0.0, 1.0)
+        } else {
+            ((value - min) / (max - min)).clamp(0.0, 1.0)
+        }
     } else {
         0.0
     };
@@ -58,6 +62,7 @@ pub fn knob(
     min: f64,
     max: f64,
     initial: f64,
+    logarithmic: bool,
     setter: impl Fn(f64) + 'static,
     fmt: impl Fn(f64) -> String + 'static,
 ) -> GtkBox {
@@ -67,7 +72,7 @@ pub fn knob(
     container.set_margin_start(4);
     container.set_margin_end(4);
 
-    let header = GtkBox::new(Orientation::Horizontal, 4);
+    let header = GtkBox::new(Orientation::Vertical, 2);
     header.set_halign(Align::Center);
     let lbl = Label::new(Some(label_text));
     lbl.add_css_class("knob-label");
@@ -80,7 +85,7 @@ pub fn knob(
     da.set_size_request(KNOB_SIZE, KNOB_SIZE);
     {
         let value = value.clone();
-        da.set_draw_func(move |_, cr, w, h| draw_knob(cr, w, h, *value.borrow(), min, max));
+        da.set_draw_func(move |_, cr, w, h| draw_knob(cr, w, h, *value.borrow(), min, max, logarithmic));
     }
 
     let gesture = gtk::GestureDrag::new();
@@ -96,7 +101,16 @@ pub fn knob(
         let da = da.clone();
         let val_lbl = val_lbl.clone();
         gesture.connect_drag_update(move |_, _dx, dy| {
-            let new_val = (*drag_origin.borrow() - dy / 200.0 * (max - min)).clamp(min, max);
+            let new_val = if logarithmic && min > 0.0 {
+                let log_min = min.ln();
+                let log_max = max.ln();
+                let log_origin = drag_origin.borrow().max(min).ln();
+                (log_origin - dy / 200.0 * (log_max - log_min))
+                    .clamp(log_min, log_max)
+                    .exp()
+            } else {
+                (*drag_origin.borrow() - dy / 200.0 * (max - min)).clamp(min, max)
+            };
             *value.borrow_mut() = new_val;
             setter(new_val);
             val_lbl.set_text(&fmt(new_val));

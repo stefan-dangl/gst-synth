@@ -5,6 +5,7 @@ use gtk::{Box as GtkBox, Frame, Label, Orientation, Overlay, glib};
 use gtk4 as gtk;
 use gtk4::Align;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -104,7 +105,9 @@ fn placeholder_key() -> GtkBox {
     placeholder
 }
 
-pub fn keyboard(overlay: &Overlay, command_tx: async_channel::Sender<Command>) {
+pub fn keyboard(overlay: &Overlay, command_tx: async_channel::Sender<Command>) -> HashMap<Note, Frame> {
+    let mut key_map = HashMap::new();
+
     let tones = GtkBox::new(Orientation::Horizontal, 12);
     tones.set_halign(Align::Center);
     tones.set_valign(Align::End);
@@ -112,13 +115,19 @@ pub fn keyboard(overlay: &Overlay, command_tx: async_channel::Sender<Command>) {
     tones.set_margin_start(24);
     tones.set_margin_end(24);
 
-    tones.append(&key(command_tx.clone(), Note::C, "A", Color::White));
-    tones.append(&key(command_tx.clone(), Note::D, "S", Color::White));
-    tones.append(&key(command_tx.clone(), Note::E, "D", Color::White));
-    tones.append(&key(command_tx.clone(), Note::F, "F", Color::White));
-    tones.append(&key(command_tx.clone(), Note::G, "G", Color::White));
-    tones.append(&key(command_tx.clone(), Note::A, "H", Color::White));
-    tones.append(&key(command_tx.clone(), Note::B, "J", Color::White));
+    for (note, label) in [
+        (Note::C, "A"),
+        (Note::D, "S"),
+        (Note::E, "D"),
+        (Note::F, "F"),
+        (Note::G, "G"),
+        (Note::A, "H"),
+        (Note::B, "J"),
+    ] {
+        let k = key(command_tx.clone(), note, label, Color::White);
+        key_map.insert(note, k.clone());
+        tones.append(&k);
+    }
 
     overlay.add_overlay(&tones);
 
@@ -128,13 +137,27 @@ pub fn keyboard(overlay: &Overlay, command_tx: async_channel::Sender<Command>) {
     semitones.set_margin_bottom(88);
     semitones.set_margin_start(66);
 
-    semitones.append(&key(command_tx.clone(), Note::CSharp, "W", Color::Black));
-    semitones.append(&key(command_tx.clone(), Note::DSharp, "E", Color::Black));
+    for (note, label) in [
+        (Note::CSharp, "W"),
+        (Note::DSharp, "E"),
+    ] {
+        let k = key(command_tx.clone(), note, label, Color::Black);
+        key_map.insert(note, k.clone());
+        semitones.append(&k);
+    }
     semitones.append(&placeholder_key());
-    semitones.append(&key(command_tx.clone(), Note::FSharp, "T", Color::Black));
-    semitones.append(&key(command_tx.clone(), Note::GSharp, "Y", Color::Black));
-    semitones.append(&key(command_tx.clone(), Note::ASharp, "U", Color::Black));
+    for (note, label) in [
+        (Note::FSharp, "T"),
+        (Note::GSharp, "Y"),
+        (Note::ASharp, "U"),
+    ] {
+        let k = key(command_tx.clone(), note, label, Color::Black);
+        key_map.insert(note, k.clone());
+        semitones.append(&k);
+    }
     semitones.append(&placeholder_key());
 
     overlay.add_overlay(&semitones);
+
+    key_map
 }

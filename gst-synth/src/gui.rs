@@ -5,10 +5,14 @@ use crate::gui::style::style;
 use crate::gui::visualization::visualization;
 use crate::gui::waveform_selection::waveform_selection;
 use crate::keyboard::attach_keyboard_handler;
-use crate::types::Command;
+use crate::types::{Command, GUI_TITLE};
 use gtk::prelude::*;
-use gtk::{Application, ApplicationWindow, Overlay, glib};
+use gtk::{
+    Application, ApplicationWindow, Box as GtkBox, Orientation, Overlay, SizeGroup, SizeGroupMode,
+    glib,
+};
 use gtk4 as gtk;
+use gtk4::Align;
 
 mod effects;
 mod keys;
@@ -30,7 +34,7 @@ pub fn draw_gui(
     application.connect_activate(move |app| {
         let window = ApplicationWindow::builder()
             .application(app)
-            .title("First GTK Program")
+            .title(GUI_TITLE)
             .default_width(1600)
             .default_height(600)
             .build();
@@ -39,14 +43,36 @@ pub fn draw_gui(
         overlay.set_hexpand(true);
         overlay.set_vexpand(true);
 
-        waveform_selection(&overlay, command_tx.clone());
-        visualization(&overlay, video_sink.clone());
+        let top_row = GtkBox::new(Orientation::Horizontal, 16);
+        top_row.set_halign(Align::Fill);
+        top_row.set_valign(Align::Start);
+        top_row.set_hexpand(true);
+        top_row.set_margin_top(24);
+        top_row.set_margin_start(24);
+        top_row.set_margin_end(24);
+
+        let width_group = SizeGroup::new(SizeGroupMode::Horizontal);
+
+        let wf_frame = waveform_selection(command_tx.clone());
+        width_group.add_widget(&wf_frame);
+        top_row.append(&wf_frame);
+
+        let spacer = GtkBox::new(Orientation::Horizontal, 0);
+        spacer.set_hexpand(true);
+        top_row.append(&spacer);
+
+        let vis = visualization(video_sink.clone());
+        width_group.add_widget(&vis);
+        top_row.append(&vis);
+
+        overlay.add_overlay(&top_row);
+
         effects(&overlay, effect_bin.clone());
         octave_selection(&overlay, command_tx.clone());
-        keyboard(&overlay, command_tx.clone());
+        let key_map = keyboard(&overlay, command_tx.clone());
         window.set_child(Some(&overlay));
 
-        attach_keyboard_handler(&window, command_tx.clone());
+        attach_keyboard_handler(&window, command_tx.clone(), key_map);
 
         gtk::style_context_add_provider_for_display(
             &gtk::prelude::WidgetExt::display(&window),

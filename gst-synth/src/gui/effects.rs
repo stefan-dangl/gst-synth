@@ -1,3 +1,5 @@
+use crate::types::{DEFAULT_ECHO_DELAY, DEFAULT_ECHO_FEEDBACK, DEFAULT_ECHO_INTENSITY};
+
 use super::knob::knob;
 use gst::prelude::*;
 use gtk::prelude::*;
@@ -31,18 +33,16 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
     let band0_init = eq.property::<f64>("band0");
     let band1_init = eq.property::<f64>("band1");
     let band2_init = eq.property::<f64>("band2");
-    let delay_init = (echo.property::<u64>("delay") / 1_000_000) as f64;
-    let intensity_init = echo.property::<f32>("intensity") as f64;
-    let feedback_init = echo.property::<f32>("feedback") as f64;
 
     let filter_knobs = vec![
         {
             let e = bp.clone();
             knob(
-                "Lower",
-                0.0,
+                "Lower [Hz]",
+                20.0,
                 20000.0,
-                lower_init,
+                lower_init.max(20.0),
+                true,
                 move |v| e.set_property("lower-frequency", v as f32),
                 |v| format!("{:.0}", v),
             )
@@ -54,6 +54,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 -24.0,
                 12.0,
                 band0_init,
+                false,
                 move |v| e.set_property("band0", v),
                 |v| format!("{:.1}", v),
             )
@@ -65,6 +66,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 -24.0,
                 12.0,
                 band1_init,
+                false,
                 move |v| e.set_property("band1", v),
                 |v| format!("{:.1}", v),
             )
@@ -76,6 +78,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 -24.0,
                 12.0,
                 band2_init,
+                false,
                 move |v| e.set_property("band2", v),
                 |v| format!("{:.1}", v),
             )
@@ -83,10 +86,11 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
         {
             let e = bp.clone();
             knob(
-                "Upper",
-                0.0,
+                "Upper [Hz]",
+                20.0,
                 20000.0,
-                upper_init,
+                upper_init.max(20.0),
+                true,
                 move |v| e.set_property("upper-frequency", v as f32),
                 |v| format!("{:.0}", v),
             )
@@ -100,7 +104,8 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 "Delay [ms]",
                 0.1,
                 3000.0,
-                delay_init,
+                DEFAULT_ECHO_DELAY,
+                false,
                 move |v| e.set_property("delay", (v * 1_000_000.0) as u64),
                 |v| format!("{:.0}", v),
             )
@@ -111,7 +116,8 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 "Intensity",
                 0.0,
                 1.0,
-                intensity_init,
+                DEFAULT_ECHO_INTENSITY,
+                false,
                 move |v| e.set_property("intensity", v as f32),
                 |v| format!("{:.2}", v),
             )
@@ -122,7 +128,8 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 "Feedback",
                 0.0,
                 1.0,
-                feedback_init,
+                DEFAULT_ECHO_FEEDBACK,
+                false,
                 move |v| e.set_property("feedback", v as f32),
                 |v| format!("{:.2}", v),
             )

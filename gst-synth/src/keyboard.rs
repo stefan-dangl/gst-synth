@@ -1,6 +1,7 @@
 use crate::types::{Command, Note, WaveForm};
 use gtk4::{self as gtk, gdk, glib, prelude::*};
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -43,16 +44,21 @@ fn key_to_command(key: gdk::Key) -> Option<Command> {
 pub fn attach_keyboard_handler(
     window: &gtk::ApplicationWindow,
     command_tx: async_channel::Sender<Command>,
+    key_frames: HashMap<Note, gtk::Frame>,
 ) {
     let key_controller = gtk::EventControllerKey::new();
+    let key_frames = Rc::new(key_frames);
 
     let active_key: Rc<RefCell<Option<gdk::Key>>> = Rc::new(RefCell::new(None));
+    let active_note: Rc<RefCell<Option<Note>>> = Rc::new(RefCell::new(None));
     let repeat_source: Rc<RefCell<Option<glib::SourceId>>> = Rc::new(RefCell::new(None));
 
     {
         let command_tx = command_tx.clone();
         let active_key = active_key.clone();
+        let active_note = active_note.clone();
         let repeat_source = repeat_source.clone();
+        let key_frames = key_frames.clone();
 
         key_controller.connect_key_pressed(move |_, key, _, _| {
             // Suppress OS auto-repeat events — we manage our own repeat timer
@@ -69,6 +75,19 @@ pub fn attach_keyboard_handler(
                 id.remove();
             }
             *active_key.borrow_mut() = Some(key);
+
+            // Unhighlight previous note key, highlight the new one
+            if let Some(prev) = active_note.borrow_mut().take() {
+                if let Some(frame) = key_frames.get(&prev) {
+                    frame.remove_css_class("active");
+                }
+            }
+            if let Command::ChangeNote(note) = command {
+                if let Some(frame) = key_frames.get(&note) {
+                    frame.add_css_class("active");
+                }
+                *active_note.borrow_mut() = Some(note);
+            }
 
             let _ = command_tx.try_send(command);
 
@@ -89,6 +108,11 @@ pub fn attach_keyboard_handler(
                 *active_key.borrow_mut() = None;
                 if let Some(id) = repeat_source.borrow_mut().take() {
                     id.remove();
+                }
+                if let Some(note) = active_note.borrow_mut().take() {
+                    if let Some(frame) = key_frames.get(&note) {
+                        frame.remove_css_class("active");
+                    }
                 }
             }
         });
