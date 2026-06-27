@@ -24,10 +24,10 @@ fn key_to_command(key: gdk::Key) -> Option<Command> {
         gdk::Key::u => Some(Command::ChangeNote(Note::ASharp)),
         gdk::Key::j => Some(Command::ChangeNote(Note::B)),
 
-        gdk::Key::v => Some(Command::ChangeWaveForm(WaveForm::Sine)),
+        gdk::Key::v => Some(Command::ChangeWaveForm(WaveForm::Saw)),
         gdk::Key::b => Some(Command::ChangeWaveForm(WaveForm::Square)),
-        gdk::Key::n => Some(Command::ChangeWaveForm(WaveForm::Saw)),
-        gdk::Key::m => Some(Command::ChangeWaveForm(WaveForm::Triangle)),
+        gdk::Key::n => Some(Command::ChangeWaveForm(WaveForm::Triangle)),
+        gdk::Key::m => Some(Command::ChangeWaveForm(WaveForm::Sine)),
 
         gdk::Key::_1 => Some(Command::ChangeOctave(1)),
         gdk::Key::_2 => Some(Command::ChangeOctave(2)),
@@ -45,6 +45,10 @@ pub fn attach_keyboard_handler(
     window: &gtk::ApplicationWindow,
     command_tx: async_channel::Sender<Command>,
     key_frames: HashMap<Note, gtk::Frame>,
+    waveform_frames: HashMap<WaveForm, gtk::Frame>,
+    selected_waveform: Rc<RefCell<Option<gtk::Frame>>>,
+    octave_label: gtk::Label,
+    octave_rc: Rc<RefCell<usize>>,
 ) {
     let key_controller = gtk::EventControllerKey::new();
     let key_frames = Rc::new(key_frames);
@@ -87,6 +91,21 @@ pub fn attach_keyboard_handler(
                     frame.add_css_class("active");
                 }
                 *active_note.borrow_mut() = Some(note);
+            }
+
+            if let Command::ChangeWaveForm(wf) = command {
+                if let Some(prev) = selected_waveform.borrow().as_ref() {
+                    prev.remove_css_class("selected");
+                }
+                if let Some(frame) = waveform_frames.get(&wf) {
+                    frame.add_css_class("selected");
+                    *selected_waveform.borrow_mut() = Some(frame.clone());
+                }
+            }
+
+            if let Command::ChangeOctave(n) = command {
+                octave_label.set_text(&format!("{n}"));
+                *octave_rc.borrow_mut() = n;
             }
 
             let _ = command_tx.try_send(command);

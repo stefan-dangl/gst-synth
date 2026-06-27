@@ -104,3 +104,154 @@ async fn note_release(audio_amplify: Element, release_time: Duration) {
         glib::timeout_future(fade_out_sleep_time).await;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::sound_generator;
+    use crate::types::{Command, Note, WaveForm};
+    use gst::prelude::*;
+    use std::future::Future;
+    use std::time::Duration;
+
+    fn setup_test_pipeline() -> (gst::Pipeline, gst::Element, gst::Element) {
+        gst::init().unwrap();
+        let src = gst::ElementFactory::make("audiotestsrc")
+            .name("audio_source")
+            .property("is-live", false)
+            .build()
+            .unwrap();
+        let amp = gst::ElementFactory::make("audioamplify")
+            .name("audio_amplify")
+            .property("amplification", 0.0f32)
+            .build()
+            .unwrap();
+        let sink = gst::ElementFactory::make("fakesink")
+            .property("sync", false)
+            .build()
+            .unwrap();
+        let pipeline = gst::Pipeline::new();
+        pipeline.add_many([&src, &amp, &sink]).unwrap();
+        gst::Element::link_many([&src, &amp, &sink]).unwrap();
+        pipeline.set_state(gst::State::Playing).unwrap();
+        (pipeline, src, amp)
+    }
+
+    fn read_waveform(source: &gst::Element) -> String {
+        use glib::translate::ToGlibPtr;
+        let val = source.property_value("wave");
+        let enum_class = glib::EnumClass::with_type(val.type_()).unwrap();
+        // g_value_get_enum is the correct C getter for GEnum values; no safe Rust API exists
+        // for reading an arbitrary GEnum without a generated wrapper type.
+        let int_val =
+            unsafe { glib::gobject_ffi::g_value_get_enum(val.to_glib_none().0 as *mut _) };
+        enum_class.value(int_val).unwrap().nick().to_string()
+    }
+
+    fn run<F, Fut>(f: F)
+    where
+        F: FnOnce(glib::MainContext) -> Fut,
+        Fut: Future<Output = ()> + 'static,
+    {
+        let ctx = glib::MainContext::new();
+        let fut = f(ctx.clone());
+        ctx.block_on(fut);
+    }
+
+    #[test]
+    fn change_waveform() {
+        run(|ctx| async move {
+            let (pipeline, src, amp) = setup_test_pipeline();
+            let (tx, rx) = async_channel::bounded(5);
+            ctx.spawn_local(sound_generator(src.clone(), amp, rx, ctx.clone()));
+
+            for (wave, expected_nick) in [
+                (WaveForm::Sine, "sine"),
+                (WaveForm::Square, "square"),
+                (WaveForm::Saw, "saw"),
+                (WaveForm::Triangle, "triangle"),
+            ] {
+                tx.send(Command::ChangeWaveForm(wave)).await.unwrap();
+                glib::timeout_future(Duration::from_millis(10)).await;
+                assert_eq!(
+                    read_waveform(&src),
+                    expected_nick,
+                    "waveform mismatch for {wave:?}"
+                );
+            }
+
+            tx.send(Command::Quit).await.unwrap();
+            glib::timeout_future(Duration::from_millis(10)).await;
+            pipeline.set_state(gst::State::Null).unwrap();
+        });
+    }
+
+    #[test]
+    fn change_note() {
+        run(|ctx| async move {
+            let (pipeline, src, amp) = setup_test_pipeline();
+            let (tx, rx) = async_channel::bounded(5);
+            ctx.spawn_local(sound_generator(src.clone(), amp, rx, ctx.clone()));
+            tx.send(Command::ChangeOctave(4)).await.unwrap();
+
+            for (note, expected_freq) in [
+                (Note::C, 261.63),
+                (Note::CSharp, 277.18),
+                (Note::D, 293.66),
+                (Note::DSharp, 311.13),
+                (Note::E, 329.63),
+                (Note::F, 349.23),
+                (Note::FSharp, 369.99),
+                (Note::G, 392.0),
+                (Note::GSharp, 415.3),
+                (Note::A, 440.0),
+                (Note::ASharp, 466.16),
+                (Note::B, 493.88),
+            ] {
+                tx.send(Command::ChangeNote(note)).await.unwrap();
+                glib::timeout_future(Duration::from_millis(10)).await;
+                let freq = src.property::<f64>("freq");
+                assert!(
+                    (freq - expected_freq).abs() < 0.1,
+                    "expected {note:?}4 = {expected_freq} Hz, got {freq}"
+                );
+            }
+
+            tx.send(Command::Quit).await.unwrap();
+            glib::timeout_future(Duration::from_millis(10)).await;
+            pipeline.set_state(gst::State::Null).unwrap();
+        });
+    }
+
+    #[test]
+    fn change_octave() {
+        run(|ctx| async move {
+            let (pipeline, src, amp) = setup_test_pipeline();
+            let (tx, rx) = async_channel::bounded(5);
+            ctx.spawn_local(sound_generator(src.clone(), amp, rx, ctx.clone()));
+
+            for (octave, expected_freq) in [
+                (1, 55.0),
+                (2, 110.0),
+                (3, 220.0),
+                (4, 440.0),
+                (5, 880.0),
+                (6, 1760.0),
+                (7, 3520.0),
+                (8, 7040.0),
+            ] {
+                tx.send(Command::ChangeOctave(octave)).await.unwrap();
+                tx.send(Command::ChangeNote(Note::A)).await.unwrap();
+                glib::timeout_future(Duration::from_millis(10)).await;
+                let freq = src.property::<f64>("freq");
+                assert!(
+                    (freq - expected_freq).abs() < 0.1,
+                    "expected A{octave} = {expected_freq} Hz, got {freq}"
+                );
+            }
+
+            tx.send(Command::Quit).await.unwrap();
+            glib::timeout_future(Duration::from_millis(10)).await;
+            pipeline.set_state(gst::State::Null).unwrap();
+        });
+    }
+}

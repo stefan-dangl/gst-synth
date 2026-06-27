@@ -10,7 +10,10 @@ use gtk4::Align;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-pub fn octave_selection(overlay: &Overlay, command_tx: async_channel::Sender<Command>) {
+pub fn octave_selection(
+    overlay: &Overlay,
+    command_tx: async_channel::Sender<Command>,
+) -> (Label, Rc<RefCell<usize>>) {
     let container = gtk::Box::new(gtk::Orientation::Vertical, 0);
     container.set_halign(Align::Start);
     container.set_valign(Align::End);
@@ -73,6 +76,7 @@ pub fn octave_selection(overlay: &Overlay, command_tx: async_channel::Sender<Com
     container.append(&grid);
 
     overlay.add_overlay(&container);
+    (value, octave)
 }
 
 fn arrow_button(symbol: &str) -> Frame {
