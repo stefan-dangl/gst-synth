@@ -6,6 +6,7 @@ use gtk::prelude::*;
 use gtk::{Box as GtkBox, Frame, Orientation};
 use gtk4 as gtk;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::f64::consts::PI;
 use std::rc::Rc;
 use std::time::Duration;
@@ -91,7 +92,9 @@ fn waveform_button(
     frame
 }
 
-pub fn waveform_selection(command_tx: async_channel::Sender<Command>) -> Frame {
+pub fn waveform_selection(
+    command_tx: async_channel::Sender<Command>,
+) -> (Frame, HashMap<WaveForm, Frame>, Rc<RefCell<Option<Frame>>>) {
     let frame = Frame::new(Some("Waveform"));
     frame.add_css_class("effect-section");
 
@@ -102,6 +105,7 @@ pub fn waveform_selection(command_tx: async_channel::Sender<Command>) -> Frame {
     inner.set_margin_end(8);
 
     let selected: Rc<RefCell<Option<Frame>>> = Rc::new(RefCell::new(None));
+    let mut waveform_frames: HashMap<WaveForm, Frame> = HashMap::new();
 
     let waveforms = GtkBox::new(Orientation::Horizontal, 12);
     waveforms.set_halign(gtk4::Align::Center);
@@ -116,6 +120,7 @@ pub fn waveform_selection(command_tx: async_channel::Sender<Command>) -> Frame {
             btn.add_css_class("selected");
             *selected.borrow_mut() = Some(btn.clone());
         }
+        waveform_frames.insert(wf, btn.clone());
         waveforms.append(&btn);
     }
     inner.append(&waveforms);
@@ -157,5 +162,5 @@ pub fn waveform_selection(command_tx: async_channel::Sender<Command>) -> Frame {
     inner.append(&envelope);
 
     frame.set_child(Some(&inner));
-    frame
+    (frame, waveform_frames, selected)
 }

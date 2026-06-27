@@ -53,7 +53,7 @@ pub fn draw_gui(
 
         let width_group = SizeGroup::new(SizeGroupMode::Horizontal);
 
-        let wf_frame = waveform_selection(command_tx.clone());
+        let (wf_frame, waveform_frames, selected_waveform) = waveform_selection(command_tx.clone());
         width_group.add_widget(&wf_frame);
         top_row.append(&wf_frame);
 
@@ -68,11 +68,19 @@ pub fn draw_gui(
         overlay.add_overlay(&top_row);
 
         effects(&overlay, effect_bin.clone());
-        octave_selection(&overlay, command_tx.clone());
+        let (octave_label, octave_rc) = octave_selection(&overlay, command_tx.clone());
         let key_map = keyboard(&overlay, command_tx.clone());
         window.set_child(Some(&overlay));
 
-        attach_keyboard_handler(&window, command_tx.clone(), key_map);
+        attach_keyboard_handler(
+            &window,
+            command_tx.clone(),
+            key_map,
+            waveform_frames,
+            selected_waveform,
+            octave_label,
+            octave_rc,
+        );
 
         gtk::style_context_add_provider_for_display(
             &gtk::prelude::WidgetExt::display(&window),
