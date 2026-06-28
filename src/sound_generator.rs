@@ -16,8 +16,9 @@ pub async fn sound_generator(
     audio_source: Element,
     audio_amplify: Element,
     command_rx: async_channel::Receiver<Command>,
-    main_context: MainContext,
 ) {
+    let main_context = MainContext::default();
+
     let mut octave = OCTAVE_DEFAULT;
     let mut note_release_task: Option<glib::JoinHandle<()>> = None;
     let mut release_time = RELEASE_TIME_DEFAULT;
@@ -49,8 +50,7 @@ pub async fn sound_generator(
                     Note::B => 30.87,
                 };
                 note_attack(&audio_amplify, attack_time);
-                let octave_i32 = i32::try_from(octave).expect("octave fits i32");
-                audio_source.set_property("freq", freq * 2.0_f64.powi(octave_i32));
+                audio_source.set_property("freq", freq * 2.0_f64.powi(octave));
                 note_release_task.replace(
                     main_context.spawn_local(note_release(audio_amplify.clone(), release_time)),
                 );
@@ -83,7 +83,6 @@ fn note_attack(audio_amplify: &Element, attack_time: Duration) {
     let y_steps = MAX_AMPLIFICATION / x_steps;
 
     let amplification = audio_amplify.property::<f32>("amplification");
-    println!("!!! READ AMP: {amplification}");
     if amplification < MAX_AMPLIFICATION {
         let amplification_new = (amplification + y_steps).min(MAX_AMPLIFICATION);
         audio_amplify.set_property("amplification", amplification_new);
@@ -94,14 +93,12 @@ async fn note_release(audio_amplify: Element, release_time: Duration) {
     let fade_out_sleep_time = release_time / RELEASE_STEPS;
 
     glib::timeout_future(SUSTAIN_TIME).await;
-    println!("Release time passed");
 
     let mut amplification = audio_amplify.property::<f32>("amplification");
     #[allow(clippy::cast_precision_loss)]
     while amplification > 0.0 {
         amplification -= 1.0 / RELEASE_STEPS as f32;
         amplification = amplification.max(0.0);
-        println!("!!! AMPLIFICATION: {amplification}");
         audio_amplify.set_property("amplification", amplification);
         glib::timeout_future(fade_out_sleep_time).await;
     }
@@ -109,36 +106,36 @@ async fn note_release(audio_amplify: Element, release_time: Duration) {
 
 #[cfg(test)]
 mod tests {
-    use super::sound_generator;
+    use super::*;
     use crate::types::{Command, Note, WaveForm};
-    use gst::prelude::*;
+    use gst::{Element, ElementFactory, Pipeline};
     use std::future::Future;
     use std::time::Duration;
 
-    fn setup_test_pipeline() -> (gst::Pipeline, gst::Element, gst::Element) {
+    fn setup_test_pipeline() -> (Pipeline, Element, Element) {
         gst::init().unwrap();
-        let src = gst::ElementFactory::make("audiotestsrc")
+        let src = ElementFactory::make("audiotestsrc")
             .name("audio_source")
             .property("is-live", false)
             .build()
             .unwrap();
-        let amp = gst::ElementFactory::make("audioamplify")
+        let amp = ElementFactory::make("audioamplify")
             .name("audio_amplify")
             .property("amplification", 0.0f32)
             .build()
             .unwrap();
-        let sink = gst::ElementFactory::make("fakesink")
+        let sink = ElementFactory::make("fakesink")
             .property("sync", false)
             .build()
             .unwrap();
-        let pipeline = gst::Pipeline::new();
+        let pipeline = Pipeline::new();
         pipeline.add_many([&src, &amp, &sink]).unwrap();
-        gst::Element::link_many([&src, &amp, &sink]).unwrap();
+        Element::link_many([&src, &amp, &sink]).unwrap();
         pipeline.set_state(gst::State::Playing).unwrap();
         (pipeline, src, amp)
     }
 
-    fn read_waveform(source: &gst::Element) -> String {
+    fn read_waveform(source: &Element) -> String {
         use glib::translate::ToGlibPtr;
         let val = source.property_value("wave");
         let enum_class = glib::EnumClass::with_type(val.type_()).unwrap();
@@ -154,7 +151,7 @@ mod tests {
         F: FnOnce(glib::MainContext) -> Fut,
         Fut: Future<Output = ()> + 'static,
     {
-        let ctx = glib::MainContext::new();
+        let ctx = MainContext::default();
         let fut = f(ctx.clone());
         ctx.block_on(fut);
     }
@@ -164,7 +161,7 @@ mod tests {
         run(|ctx| async move {
             let (pipeline, src, amp) = setup_test_pipeline();
             let (tx, rx) = async_channel::bounded(5);
-            ctx.spawn_local(sound_generator(src.clone(), amp, rx, ctx.clone()));
+            ctx.spawn_local(sound_generator(src.clone(), amp, rx));
 
             for (wave, expected_nick) in [
                 (WaveForm::Sine, "sine"),
@@ -192,7 +189,7 @@ mod tests {
         run(|ctx| async move {
             let (pipeline, src, amp) = setup_test_pipeline();
             let (tx, rx) = async_channel::bounded(5);
-            ctx.spawn_local(sound_generator(src.clone(), amp, rx, ctx.clone()));
+            ctx.spawn_local(sound_generator(src.clone(), amp, rx));
             tx.send(Command::ChangeOctave(4)).await.unwrap();
 
             for (note, expected_freq) in [
@@ -229,7 +226,7 @@ mod tests {
         run(|ctx| async move {
             let (pipeline, src, amp) = setup_test_pipeline();
             let (tx, rx) = async_channel::bounded(5);
-            ctx.spawn_local(sound_generator(src.clone(), amp, rx, ctx.clone()));
+            ctx.spawn_local(sound_generator(src.clone(), amp, rx));
 
             for (octave, expected_freq) in [
                 (1, 55.0),

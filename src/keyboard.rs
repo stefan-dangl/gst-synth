@@ -5,6 +5,8 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Duration;
 
+// TODO_SD: Check
+
 pub const REPEAT_INTERVAL: Duration = Duration::from_millis(5);
 
 fn key_to_command(key: gdk::Key) -> Option<Command> {
@@ -44,11 +46,11 @@ fn key_to_command(key: gdk::Key) -> Option<Command> {
 pub fn attach_keyboard_handler(
     window: &gtk::ApplicationWindow,
     command_tx: &async_channel::Sender<Command>,
-    key_frames: HashMap<Note, gtk::Frame>,
+    key_frames: HashMap<Note, gtk::Frame>, // TODO_SD: Put into one struct ... Split command tx and gui modification
     waveform_frames: HashMap<WaveForm, gtk::Frame>,
     selected_waveform: Rc<RefCell<Option<gtk::Frame>>>,
     octave_label: gtk::Label,
-    octave_rc: Rc<RefCell<usize>>,
+    octave_rc: Rc<RefCell<i32>>,
 ) {
     let key_controller = gtk::EventControllerKey::new();
     let key_frames = Rc::new(key_frames);
@@ -65,7 +67,6 @@ pub fn attach_keyboard_handler(
         let key_frames = key_frames.clone();
 
         key_controller.connect_key_pressed(move |_, key, _, _| {
-            // Suppress OS auto-repeat events — we manage our own repeat timer
             if active_key.borrow().as_ref() == Some(&key) {
                 return glib::Propagation::Stop;
             }

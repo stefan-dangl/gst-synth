@@ -1,13 +1,13 @@
 use crate::types::{Command, Note};
-use gtk::GestureClick;
-use gtk::prelude::*;
-use gtk::{Box as GtkBox, Frame, Label, Orientation, Overlay, glib};
-use gtk4 as gtk;
-use gtk4::Align;
+use gtk4::{
+    Align, Box as GtkBox, Frame, GestureClick, Label, Orientation, Overlay, glib, prelude::*,
+};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::Duration;
+
+// TODO_SD: Check
 
 const NOTE_REPEAT_INTERVAL: Duration = Duration::from_millis(5);
 
@@ -43,16 +43,14 @@ fn key(
     key.set_child(Some(&label));
 
     let repeat_source = Rc::new(RefCell::new(None::<glib::SourceId>));
-
     let gesture = GestureClick::new();
 
     {
         let command_tx = command_tx.clone();
-        let repeat_source = repeat_source.clone();
+        let repeat_source = repeat_source.clone(); // TODO_SD: ???
         let key = key.clone();
 
         gesture.connect_pressed(move |_, _, _, _| {
-            println!("!!! BUTTON PRESSED");
             key.add_css_class("active");
 
             if repeat_source.borrow().is_some() {

@@ -1,15 +1,7 @@
 use super::knob::knob;
 use crate::types::{ATTACK_TIME_DEFAULT, Command, RELEASE_TIME_DEFAULT, Setting, WaveForm};
-use gtk::DrawingArea;
-use gtk::GestureClick;
-use gtk::prelude::*;
-use gtk::{Box as GtkBox, Frame, Orientation};
-use gtk4 as gtk;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::f64::consts::PI;
-use std::rc::Rc;
-use std::time::Duration;
+use gtk4::{self as gtk, Box as GtkBox, DrawingArea, Frame, GestureClick, Orientation, prelude::*};
+use std::{cell::RefCell, collections::HashMap, f64::consts::PI, rc::Rc, time::Duration};
 
 fn waveform_icon(waveform: WaveForm) -> DrawingArea {
     let area = DrawingArea::new();
@@ -125,6 +117,7 @@ pub fn waveform_selection(
     }
     inner.append(&waveforms);
 
+    // TODO_SD: READ FROM COMMAND RX?
     let envelope = GtkBox::new(Orientation::Horizontal, 12);
     envelope.set_halign(gtk4::Align::Center);
     {
