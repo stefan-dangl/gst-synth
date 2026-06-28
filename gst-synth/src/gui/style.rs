@@ -3,7 +3,7 @@ use gtk4::CssProvider;
 pub fn style() -> CssProvider {
     let provider = CssProvider::new();
     provider.load_from_data(
-        r#"
+        r"
 frame.white-key {
     background: #f5f5f5;
     border: none;
@@ -74,7 +74,7 @@ frame.effect-section > label {
     font-size: 11px;
     font-weight: bold;
 }
-"#,
+",
     );
     provider
 }

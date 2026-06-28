@@ -43,7 +43,7 @@ fn key_to_command(key: gdk::Key) -> Option<Command> {
 
 pub fn attach_keyboard_handler(
     window: &gtk::ApplicationWindow,
-    command_tx: async_channel::Sender<Command>,
+    command_tx: &async_channel::Sender<Command>,
     key_frames: HashMap<Note, gtk::Frame>,
     waveform_frames: HashMap<WaveForm, gtk::Frame>,
     selected_waveform: Rc<RefCell<Option<gtk::Frame>>>,
@@ -81,10 +81,10 @@ pub fn attach_keyboard_handler(
             *active_key.borrow_mut() = Some(key);
 
             // Unhighlight previous note key, highlight the new one
-            if let Some(prev) = active_note.borrow_mut().take() {
-                if let Some(frame) = key_frames.get(&prev) {
-                    frame.remove_css_class("active");
-                }
+            if let Some(prev) = active_note.borrow_mut().take()
+                && let Some(frame) = key_frames.get(&prev)
+            {
+                frame.remove_css_class("active");
             }
             if let Command::ChangeNote(note) = command {
                 if let Some(frame) = key_frames.get(&note) {
@@ -128,10 +128,10 @@ pub fn attach_keyboard_handler(
                 if let Some(id) = repeat_source.borrow_mut().take() {
                     id.remove();
                 }
-                if let Some(note) = active_note.borrow_mut().take() {
-                    if let Some(frame) = key_frames.get(&note) {
-                        frame.remove_css_class("active");
-                    }
+                if let Some(note) = active_note.borrow_mut().take()
+                    && let Some(frame) = key_frames.get(&note)
+                {
+                    frame.remove_css_class("active");
                 }
             }
         });

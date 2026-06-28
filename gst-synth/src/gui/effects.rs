@@ -22,19 +22,14 @@ fn section(title: &str, knobs: Vec<GtkBox>) -> Frame {
     frame
 }
 
-pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
-    let bin = effect_bin.downcast::<gst::Bin>().unwrap();
-    let eq = bin.by_name("audio_equalizer").unwrap();
-    let bp = bin.by_name("audio_band_pass").unwrap();
-    let echo = bin.by_name("audio_echo").unwrap();
-
-    let lower_init = bp.property::<f32>("lower-frequency") as f64;
-    let upper_init = bp.property::<f32>("upper-frequency") as f64;
+fn filter_section(bp: &gst::Element, eq: &gst::Element) -> Frame {
+    let lower_init = f64::from(bp.property::<f32>("lower-frequency"));
+    let upper_init = f64::from(bp.property::<f32>("upper-frequency"));
     let band0_init = eq.property::<f64>("band0");
     let band1_init = eq.property::<f64>("band1");
     let band2_init = eq.property::<f64>("band2");
 
-    let filter_knobs = vec![
+    let knobs = vec![
         {
             let e = bp.clone();
             knob(
@@ -43,8 +38,11 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 20000.0,
                 lower_init.max(20.0),
                 true,
-                move |v| e.set_property("lower-frequency", v as f32),
-                |v| format!("{:.0}", v),
+                move |v| {
+                    #[allow(clippy::cast_possible_truncation)]
+                    e.set_property("lower-frequency", v as f32);
+                },
+                |v| format!("{v:.0}"),
             )
         },
         {
@@ -56,7 +54,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 band0_init,
                 false,
                 move |v| e.set_property("band0", v),
-                |v| format!("{:.1}", v),
+                |v| format!("{v:.1}"),
             )
         },
         {
@@ -68,7 +66,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 band1_init,
                 false,
                 move |v| e.set_property("band1", v),
-                |v| format!("{:.1}", v),
+                |v| format!("{v:.1}"),
             )
         },
         {
@@ -80,7 +78,7 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 band2_init,
                 false,
                 move |v| e.set_property("band2", v),
-                |v| format!("{:.1}", v),
+                |v| format!("{v:.1}"),
             )
         },
         {
@@ -91,13 +89,20 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 20000.0,
                 upper_init.max(20.0),
                 true,
-                move |v| e.set_property("upper-frequency", v as f32),
-                |v| format!("{:.0}", v),
+                move |v| {
+                    #[allow(clippy::cast_possible_truncation)]
+                    e.set_property("upper-frequency", v as f32);
+                },
+                |v| format!("{v:.0}"),
             )
         },
     ];
 
-    let echo_knobs = vec![
+    section("Filter", knobs)
+}
+
+fn echo_section(echo: &gst::Element) -> Frame {
+    let knobs = vec![
         {
             let e = echo.clone();
             knob(
@@ -106,8 +111,11 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 3000.0,
                 DEFAULT_ECHO_DELAY,
                 false,
-                move |v| e.set_property("delay", (v * 1_000_000.0) as u64),
-                |v| format!("{:.0}", v),
+                move |v| {
+                    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                    e.set_property("delay", (v * 1_000_000.0) as u64);
+                },
+                |v| format!("{v:.0}"),
             )
         },
         {
@@ -118,8 +126,11 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 1.0,
                 DEFAULT_ECHO_INTENSITY,
                 false,
-                move |v| e.set_property("intensity", v as f32),
-                |v| format!("{:.2}", v),
+                move |v| {
+                    #[allow(clippy::cast_possible_truncation)]
+                    e.set_property("intensity", v as f32);
+                },
+                |v| format!("{v:.2}"),
             )
         },
         {
@@ -130,11 +141,23 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
                 1.0,
                 DEFAULT_ECHO_FEEDBACK,
                 false,
-                move |v| e.set_property("feedback", v as f32),
-                |v| format!("{:.2}", v),
+                move |v| {
+                    #[allow(clippy::cast_possible_truncation)]
+                    e.set_property("feedback", v as f32);
+                },
+                |v| format!("{v:.2}"),
             )
         },
     ];
+
+    section("Echo", knobs)
+}
+
+pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
+    let bin = effect_bin.downcast::<gst::Bin>().unwrap();
+    let eq = bin.by_name("audio_equalizer").unwrap();
+    let bp = bin.by_name("audio_band_pass").unwrap();
+    let echo = bin.by_name("audio_echo").unwrap();
 
     let panel = GtkBox::new(Orientation::Vertical, 8);
     panel.set_halign(Align::Center);
@@ -142,8 +165,8 @@ pub fn effects(overlay: &Overlay, effect_bin: gst::Element) {
     panel.set_margin_top(24);
     panel.set_margin_start(8);
     panel.set_margin_end(8);
-    panel.append(&section("Filter", filter_knobs));
-    panel.append(&section("Echo", echo_knobs));
+    panel.append(&filter_section(&bp, &eq));
+    panel.append(&echo_section(&echo));
 
     overlay.add_overlay(&panel);
 }

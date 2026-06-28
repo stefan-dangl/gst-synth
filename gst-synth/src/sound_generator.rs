@@ -49,7 +49,8 @@ pub async fn sound_generator(
                     Note::B => 30.87,
                 };
                 note_attack(&audio_amplify, attack_time);
-                audio_source.set_property("freq", freq * 2.0_f64.powi(octave as i32));
+                let octave_i32 = i32::try_from(octave).expect("octave fits i32");
+                audio_source.set_property("freq", freq * 2.0_f64.powi(octave_i32));
                 note_release_task.replace(
                     main_context.spawn_local(note_release(audio_amplify.clone(), release_time)),
                 );
@@ -73,15 +74,15 @@ pub async fn sound_generator(
                 Setting::AttackTime(duration) => attack_time = duration,
                 Setting::ReleaseTime(duration) => release_time = duration,
             },
-        };
+        }
     }
 }
 
 fn note_attack(audio_amplify: &Element, attack_time: Duration) {
-    let x_steps = attack_time.as_nanos() / REPEAT_INTERVAL.as_nanos();
-    let y_steps = MAX_AMPLIFICATION / x_steps as f32;
+    let x_steps = attack_time.as_secs_f32() / REPEAT_INTERVAL.as_secs_f32();
+    let y_steps = MAX_AMPLIFICATION / x_steps;
 
-    let amplification = audio_amplify.property::<f32>("amplification") as f32;
+    let amplification = audio_amplify.property::<f32>("amplification");
     println!("!!! READ AMP: {amplification}");
     if amplification < MAX_AMPLIFICATION {
         let amplification_new = (amplification + y_steps).min(MAX_AMPLIFICATION);
@@ -95,7 +96,8 @@ async fn note_release(audio_amplify: Element, release_time: Duration) {
     glib::timeout_future(SUSTAIN_TIME).await;
     println!("Release time passed");
 
-    let mut amplification = audio_amplify.property::<f32>("amplification") as f32;
+    let mut amplification = audio_amplify.property::<f32>("amplification");
+    #[allow(clippy::cast_precision_loss)]
     while amplification > 0.0 {
         amplification -= 1.0 / RELEASE_STEPS as f32;
         amplification = amplification.max(0.0);
