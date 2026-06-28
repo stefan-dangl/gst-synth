@@ -12,7 +12,7 @@ use std::rc::Rc;
 
 pub fn octave_selection(
     overlay: &Overlay,
-    command_tx: async_channel::Sender<Command>,
+    command_tx: &async_channel::Sender<Command>,
 ) -> (Label, Rc<RefCell<usize>>) {
     let container = gtk::Box::new(gtk::Orientation::Vertical, 0);
     container.set_halign(Align::Start);

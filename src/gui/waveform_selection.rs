@@ -15,12 +15,12 @@ fn waveform_icon(waveform: WaveForm) -> DrawingArea {
     let area = DrawingArea::new();
     area.set_size_request(56, 36);
     area.set_draw_func(move |_, cr, width, height| {
-        let w = width as f64;
-        let h = height as f64;
-        let cy = h / 2.0;
-        let amp = h * 0.38;
-        let x0 = w * 0.08;
-        let x1 = w - x0;
+        let width_f = f64::from(width);
+        let height_f = f64::from(height);
+        let cy = height_f / 2.0;
+        let amp = height_f * 0.38;
+        let x0 = width_f * 0.08;
+        let x1 = width_f - x0;
 
         cr.set_source_rgb(1.0, 1.0, 1.0);
         cr.set_line_width(1.5);
@@ -30,18 +30,18 @@ fn waveform_icon(waveform: WaveForm) -> DrawingArea {
         match waveform {
             WaveForm::Sine => {
                 for i in 0..=100u32 {
-                    let t = i as f64 / 100.0;
-                    let x = x0 + t * (x1 - x0);
-                    let y = cy - amp * (2.0 * PI * t).sin();
+                    let frac = f64::from(i) / 100.0;
+                    let px = x0 + frac * (x1 - x0);
+                    let py = cy - amp * (2.0 * PI * frac).sin();
                     if i == 0 {
-                        cr.move_to(x, y);
+                        cr.move_to(px, py);
                     } else {
-                        cr.line_to(x, y);
+                        cr.line_to(px, py);
                     }
                 }
             }
             WaveForm::Square => {
-                let mid = (x0 + x1) / 2.0;
+                let mid = f64::midpoint(x0, x1);
                 cr.move_to(x0, cy - amp);
                 cr.line_to(mid, cy - amp);
                 cr.line_to(mid, cy + amp);
@@ -93,7 +93,7 @@ fn waveform_button(
 }
 
 pub fn waveform_selection(
-    command_tx: async_channel::Sender<Command>,
+    command_tx: &async_channel::Sender<Command>,
 ) -> (Frame, HashMap<WaveForm, Frame>, Rc<RefCell<Option<Frame>>>) {
     let frame = Frame::new(Some("Waveform"));
     frame.add_css_class("effect-section");
@@ -133,14 +133,14 @@ pub fn waveform_selection(
             "Attack [ms]",
             0.0,
             2000.0,
-            ATTACK_TIME_DEFAULT.as_millis() as f64,
+            ATTACK_TIME_DEFAULT.as_secs_f64() * 1000.0,
             false,
             move |v| {
                 let _ = tx.try_send(Command::ChangeSetting(Setting::AttackTime(
-                    Duration::from_millis(v as u64),
+                    Duration::from_secs_f64(v / 1000.0),
                 )));
             },
-            |v| format!("{:.0}", v),
+            |v| format!("{v:.0}"),
         ));
     }
     {
@@ -149,14 +149,14 @@ pub fn waveform_selection(
             "Release [ms]",
             0.0,
             5000.0,
-            RELEASE_TIME_DEFAULT.as_millis() as f64,
+            RELEASE_TIME_DEFAULT.as_secs_f64() * 1000.0,
             false,
             move |v| {
                 let _ = tx.try_send(Command::ChangeSetting(Setting::ReleaseTime(
-                    Duration::from_millis(v as u64),
+                    Duration::from_secs_f64(v / 1000.0),
                 )));
             },
-            |v| format!("{:.0}", v),
+            |v| format!("{v:.0}"),
         ));
     }
     inner.append(&envelope);

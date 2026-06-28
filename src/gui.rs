@@ -53,7 +53,7 @@ pub fn draw_gui(
 
         let width_group = SizeGroup::new(SizeGroupMode::Horizontal);
 
-        let (wf_frame, waveform_frames, selected_waveform) = waveform_selection(command_tx.clone());
+        let (wf_frame, waveform_frames, selected_waveform) = waveform_selection(&command_tx);
         width_group.add_widget(&wf_frame);
         top_row.append(&wf_frame);
 
@@ -61,20 +61,20 @@ pub fn draw_gui(
         spacer.set_hexpand(true);
         top_row.append(&spacer);
 
-        let vis = visualization(video_sink.clone());
+        let vis = visualization(&video_sink);
         width_group.add_widget(&vis);
         top_row.append(&vis);
 
         overlay.add_overlay(&top_row);
 
         effects(&overlay, effect_bin.clone());
-        let (octave_label, octave_rc) = octave_selection(&overlay, command_tx.clone());
-        let key_map = keyboard(&overlay, command_tx.clone());
+        let (octave_label, octave_rc) = octave_selection(&overlay, &command_tx);
+        let key_map = keyboard(&overlay, &command_tx);
         window.set_child(Some(&overlay));
 
         attach_keyboard_handler(
             &window,
-            command_tx.clone(),
+            &command_tx,
             key_map,
             waveform_frames,
             selected_waveform,

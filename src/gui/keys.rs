@@ -11,17 +11,19 @@ use std::time::Duration;
 
 const NOTE_REPEAT_INTERVAL: Duration = Duration::from_millis(5);
 
+#[derive(Clone, Copy)]
 pub enum Color {
     White,
     Black,
 }
 
 fn key(
-    command_tx: async_channel::Sender<Command>,
+    command_tx: &async_channel::Sender<Command>,
     note: Note,
     label: &str,
     key_color: Color,
 ) -> Frame {
+    let command_tx = command_tx.clone();
     let key = Frame::new(None);
     key.set_size_request(72, 72);
 
@@ -105,7 +107,10 @@ fn placeholder_key() -> GtkBox {
     placeholder
 }
 
-pub fn keyboard(overlay: &Overlay, command_tx: async_channel::Sender<Command>) -> HashMap<Note, Frame> {
+pub fn keyboard(
+    overlay: &Overlay,
+    command_tx: &async_channel::Sender<Command>,
+) -> HashMap<Note, Frame> {
     let mut key_map = HashMap::new();
 
     let tones = GtkBox::new(Orientation::Horizontal, 12);
@@ -124,7 +129,7 @@ pub fn keyboard(overlay: &Overlay, command_tx: async_channel::Sender<Command>) -
         (Note::A, "H"),
         (Note::B, "J"),
     ] {
-        let k = key(command_tx.clone(), note, label, Color::White);
+        let k = key(command_tx, note, label, Color::White);
         key_map.insert(note, k.clone());
         tones.append(&k);
     }
@@ -137,11 +142,8 @@ pub fn keyboard(overlay: &Overlay, command_tx: async_channel::Sender<Command>) -
     semitones.set_margin_bottom(88);
     semitones.set_margin_start(66);
 
-    for (note, label) in [
-        (Note::CSharp, "W"),
-        (Note::DSharp, "E"),
-    ] {
-        let k = key(command_tx.clone(), note, label, Color::Black);
+    for (note, label) in [(Note::CSharp, "W"), (Note::DSharp, "E")] {
+        let k = key(command_tx, note, label, Color::Black);
         key_map.insert(note, k.clone());
         semitones.append(&k);
     }
@@ -151,7 +153,7 @@ pub fn keyboard(overlay: &Overlay, command_tx: async_channel::Sender<Command>) -
         (Note::GSharp, "Y"),
         (Note::ASharp, "U"),
     ] {
-        let k = key(command_tx.clone(), note, label, Color::Black);
+        let k = key(command_tx, note, label, Color::Black);
         key_map.insert(note, k.clone());
         semitones.append(&k);
     }

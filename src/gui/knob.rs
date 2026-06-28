@@ -11,9 +11,17 @@ pub const KNOB_SIZE: i32 = 72;
 const KNOB_START: f64 = PI * 0.75;
 const KNOB_SWEEP: f64 = PI * 1.5;
 
-pub fn draw_knob(cr: &cairo::Context, w: i32, h: i32, value: f64, min: f64, max: f64, logarithmic: bool) {
-    let cx = w as f64 / 2.0;
-    let cy = h as f64 / 2.0;
+pub fn draw_knob(
+    cr: &cairo::Context,
+    w: i32,
+    h: i32,
+    value: f64,
+    min: f64,
+    max: f64,
+    logarithmic: bool,
+) {
+    let cx = f64::from(w) / 2.0;
+    let cy = f64::from(h) / 2.0;
     let r = cx.min(cy) - 3.0;
     let track_r = r - 8.0;
 
@@ -85,7 +93,9 @@ pub fn knob(
     da.set_size_request(KNOB_SIZE, KNOB_SIZE);
     {
         let value = value.clone();
-        da.set_draw_func(move |_, cr, w, h| draw_knob(cr, w, h, *value.borrow(), min, max, logarithmic));
+        da.set_draw_func(move |_, cr, w, h| {
+            draw_knob(cr, w, h, *value.borrow(), min, max, logarithmic)
+        });
     }
 
     let gesture = gtk::GestureDrag::new();
