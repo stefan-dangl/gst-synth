@@ -1,10 +1,7 @@
-use crate::types::{Command, NOTE_REPEAT_INTERVAL, Note, WaveForm};
+use crate::types::{Command, NOTE_REPEAT_INTERVAL, Note, UiEvent, WaveForm};
 use gtk4::{self as gtk, gdk, glib, prelude::*};
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
-
-// TODO_SD: Check
 
 fn key_to_command(key: gdk::Key) -> Option<Command> {
     match key {
@@ -43,25 +40,18 @@ fn key_to_command(key: gdk::Key) -> Option<Command> {
 pub fn attach_keyboard_handler(
     window: &gtk::ApplicationWindow,
     command_tx: &async_channel::Sender<Command>,
-    key_frames: HashMap<Note, gtk::Frame>, // TODO_SD: Put into one struct ... Split command tx and gui modification
-    waveform_frames: HashMap<WaveForm, gtk::Frame>,
-    selected_waveform: Rc<RefCell<Option<gtk::Frame>>>,
-    octave_label: gtk::Label,
-    octave_rc: Rc<RefCell<i32>>,
+    ui_tx: async_channel::Sender<UiEvent>,
 ) {
     let key_controller = gtk::EventControllerKey::new();
-    let key_frames = Rc::new(key_frames);
 
     let active_key: Rc<RefCell<Option<gdk::Key>>> = Rc::new(RefCell::new(None));
-    let active_note: Rc<RefCell<Option<Note>>> = Rc::new(RefCell::new(None));
     let repeat_source: Rc<RefCell<Option<glib::SourceId>>> = Rc::new(RefCell::new(None));
 
     {
         let command_tx = command_tx.clone();
         let active_key = active_key.clone();
-        let active_note = active_note.clone();
         let repeat_source = repeat_source.clone();
-        let key_frames = key_frames.clone();
+        let ui_tx = ui_tx.clone();
 
         key_controller.connect_key_pressed(move |_, key, _, _| {
             if active_key.borrow().as_ref() == Some(&key) {
@@ -78,42 +68,30 @@ pub fn attach_keyboard_handler(
             }
             *active_key.borrow_mut() = Some(key);
 
-            // Unhighlight previous note key, highlight the new one
-            if let Some(prev) = active_note.borrow_mut().take()
-                && let Some(frame) = key_frames.get(&prev)
-            {
-                frame.remove_css_class("active");
-            }
-            if let Command::ChangeNote(note) = command {
-                if let Some(frame) = key_frames.get(&note) {
-                    frame.add_css_class("active");
-                }
-                *active_note.borrow_mut() = Some(note);
-            }
-
-            if let Command::ChangeWaveForm(wf) = command {
-                if let Some(prev) = selected_waveform.borrow().as_ref() {
-                    prev.remove_css_class("selected");
-                }
-                if let Some(frame) = waveform_frames.get(&wf) {
-                    frame.add_css_class("selected");
-                    *selected_waveform.borrow_mut() = Some(frame.clone());
+            let ui_event = match command {
+                Command::ChangeNote(note) => Some(UiEvent::NoteChanged(Some(note))),
+                Command::ChangeWaveForm(wf) => Some(UiEvent::WaveFormChanged(wf)),
+                Command::ChangeOctave(n) => Some(UiEvent::OctaveChanged(n)),
+                _ => None,
+            };
+            if let Some(ui_event) = ui_event {
+                if let Err(err) = ui_tx.try_send(ui_event) {
+                    eprintln!("Failed to send ui event: {err:?}");
                 }
             }
 
-            if let Command::ChangeOctave(n) = command {
-                octave_label.set_text(&format!("{n}"));
-                *octave_rc.borrow_mut() = n;
+            if let Err(err) = command_tx.try_send(command) {
+                eprintln!("Failed to send command: {err:?}");
             }
-
-            let _ = command_tx.try_send(command);
 
             let command_tx = command_tx.clone();
-            let id = glib::timeout_add_local(NOTE_REPEAT_INTERVAL, move || {
-                let _ = command_tx.try_send(command);
+            let command_repeater = glib::timeout_add_local(NOTE_REPEAT_INTERVAL, move || {
+                if let Err(err) = command_tx.try_send(command) {
+                    eprintln!("Failed to repeat keyboard command: {err:?}");
+                }
                 glib::ControlFlow::Continue
             });
-            *repeat_source.borrow_mut() = Some(id);
+            *repeat_source.borrow_mut() = Some(command_repeater);
 
             glib::Propagation::Stop
         });
@@ -126,11 +104,7 @@ pub fn attach_keyboard_handler(
                 if let Some(id) = repeat_source.borrow_mut().take() {
                     id.remove();
                 }
-                if let Some(note) = active_note.borrow_mut().take()
-                    && let Some(frame) = key_frames.get(&note)
-                {
-                    frame.remove_css_class("active");
-                }
+                let _ = ui_tx.try_send(UiEvent::NoteChanged(None));
             }
         });
     }

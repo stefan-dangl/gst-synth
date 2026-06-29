@@ -86,7 +86,7 @@ fn waveform_button(
 
 pub fn waveform_selection(
     command_tx: &async_channel::Sender<Command>,
-) -> (Frame, HashMap<WaveForm, Frame>, Rc<RefCell<Option<Frame>>>) {
+) -> (Frame, impl Fn(WaveForm) + use<>) {
     let frame = Frame::new(Some("Waveform"));
     frame.add_css_class("effect-section");
 
@@ -117,7 +117,8 @@ pub fn waveform_selection(
     }
     inner.append(&waveforms);
 
-    // TODO_SD: READ FROM COMMAND RX?
+    let waveform_frames = Rc::new(waveform_frames);
+
     let envelope = GtkBox::new(Orientation::Horizontal, 12);
     envelope.set_halign(gtk4::Align::Center);
     {
@@ -155,5 +156,16 @@ pub fn waveform_selection(
     inner.append(&envelope);
 
     frame.set_child(Some(&inner));
-    (frame, waveform_frames, selected)
+
+    let update = move |wf: WaveForm| {
+        if let Some(prev) = selected.borrow().as_ref() {
+            prev.remove_css_class("selected");
+        }
+        if let Some(f) = waveform_frames.get(&wf) {
+            f.add_css_class("selected");
+            *selected.borrow_mut() = Some(f.clone());
+        }
+    };
+
+    (frame, update)
 }

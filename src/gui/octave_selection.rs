@@ -6,7 +6,7 @@ use std::rc::Rc;
 pub fn octave_selection(
     overlay: &Overlay,
     command_tx: &async_channel::Sender<Command>,
-) -> (Label, Rc<RefCell<i32>>) {
+) -> impl Fn(i32) + use<> {
     let container = gtk::Box::new(gtk::Orientation::Vertical, 0);
     container.set_halign(Align::Start);
     container.set_valign(Align::End);
@@ -56,8 +56,6 @@ pub fn octave_selection(
         down_btn.add_controller(gesture);
     }
 
-    // TODO_SD: READ FROM COMMAND RX?
-
     octave_label.set_halign(Align::Center);
 
     let grid = Grid::new();
@@ -71,7 +69,11 @@ pub fn octave_selection(
     container.append(&grid);
 
     overlay.add_overlay(&container);
-    (value, octave)
+
+    move |n: i32| {
+        value.set_text(&format!("{n}"));
+        *octave.borrow_mut() = n;
+    }
 }
 
 fn arrow_button(symbol: &str) -> Frame {

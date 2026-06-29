@@ -1,15 +1,10 @@
-use crate::types::{Command, Note};
+use crate::types::{Command, NOTE_REPEAT_INTERVAL, Note};
 use gtk4::{
     Align, Box as GtkBox, Frame, GestureClick, Label, Orientation, Overlay, glib, prelude::*,
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::time::Duration;
-
-// TODO_SD: Check
-
-const NOTE_REPEAT_INTERVAL: Duration = Duration::from_millis(5);
 
 #[derive(Clone, Copy)]
 pub enum Color {
@@ -108,7 +103,7 @@ fn placeholder_key() -> GtkBox {
 pub fn keyboard(
     overlay: &Overlay,
     command_tx: &async_channel::Sender<Command>,
-) -> HashMap<Note, Frame> {
+) -> impl Fn(Option<Note>) + use<> {
     let mut key_map = HashMap::new();
 
     let tones = GtkBox::new(Orientation::Horizontal, 12);
@@ -159,5 +154,19 @@ pub fn keyboard(
 
     overlay.add_overlay(&semitones);
 
-    key_map
+    let key_map = Rc::new(key_map);
+    let active: Rc<RefCell<Option<Note>>> = Rc::new(RefCell::new(None));
+    move |note: Option<Note>| {
+        if let Some(prev) = active.borrow_mut().take() {
+            if let Some(frame) = key_map.get(&prev) {
+                frame.remove_css_class("active");
+            }
+        }
+        if let Some(n) = note {
+            if let Some(frame) = key_map.get(&n) {
+                frame.add_css_class("active");
+            }
+            *active.borrow_mut() = Some(n);
+        }
+    }
 }

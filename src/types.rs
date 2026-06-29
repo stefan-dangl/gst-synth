@@ -61,3 +61,10 @@ pub enum Command {
     ChangeSetting(Setting),
     Quit,
 }
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum UiEvent {
+    NoteChanged(Option<Note>),
+    OctaveChanged(i32),
+    WaveFormChanged(WaveForm),
+}
