@@ -1,8 +1,8 @@
 use crate::{gui::draw_gui, pipeline::create_pipeline, sound_generator::sound_generator};
 use gst::{State, prelude::*};
 
+mod config;
 mod gui;
-mod keyboard;
 mod pipeline;
 mod sound_generator;
 mod types;
@@ -10,6 +10,7 @@ mod types;
 fn main() {
     gst::init().expect("Failed to initialize Gstreamer");
     gstgtk4::plugin_register_static().expect("Failed to register gtk4 plugin");
+
     let main_context = glib::MainContext::default();
     let _guard = main_context.acquire().unwrap();
     let main_loop = glib::MainLoop::new(Some(&main_context), false);
@@ -32,11 +33,10 @@ fn main() {
         .by_name("effect_bin")
         .expect("effect_bin not found");
 
-    let (command_tx, command_rx) = async_channel::bounded(5);
+    let (command_tx, command_rx) = async_channel::bounded(8);
     let main_loop_clone = main_loop.clone();
-    let main_context_clone = main_context.clone();
     main_context.spawn_local(async move {
-        sound_generator(audio_source, audio_amplify, command_rx, main_context_clone).await;
+        sound_generator(audio_source, audio_amplify, command_rx).await;
         main_loop_clone.quit();
     });
 

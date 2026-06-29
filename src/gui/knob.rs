@@ -1,8 +1,4 @@
-use gtk::prelude::*;
-use gtk::{Box as GtkBox, DrawingArea, Label, Orientation};
-use gtk4 as gtk;
-use gtk4::Align;
-use gtk4::cairo;
+use gtk4::{self as gtk, Align, Box as GtkBox, DrawingArea, Label, Orientation, cairo, prelude::*};
 use std::cell::RefCell;
 use std::f64::consts::PI;
 use std::rc::Rc;
@@ -94,7 +90,7 @@ pub fn knob(
     {
         let value = value.clone();
         da.set_draw_func(move |_, cr, w, h| {
-            draw_knob(cr, w, h, *value.borrow(), min, max, logarithmic)
+            draw_knob(cr, w, h, *value.borrow(), min, max, logarithmic);
         });
     }
 

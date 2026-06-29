@@ -1,15 +1,8 @@
 use super::knob::knob;
-use crate::types::{ATTACK_TIME_DEFAULT, Command, RELEASE_TIME_DEFAULT, Setting, WaveForm};
-use gtk::DrawingArea;
-use gtk::GestureClick;
-use gtk::prelude::*;
-use gtk::{Box as GtkBox, Frame, Orientation};
-use gtk4 as gtk;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::f64::consts::PI;
-use std::rc::Rc;
-use std::time::Duration;
+use crate::config::{ATTACK_TIME_DEFAULT, RELEASE_TIME_DEFAULT};
+use crate::types::{Command, Setting, WaveForm};
+use gtk4::{self as gtk, Box as GtkBox, DrawingArea, Frame, GestureClick, Orientation, prelude::*};
+use std::{cell::RefCell, collections::HashMap, f64::consts::PI, rc::Rc, time::Duration};
 
 fn waveform_icon(waveform: WaveForm) -> DrawingArea {
     let area = DrawingArea::new();
@@ -94,7 +87,7 @@ fn waveform_button(
 
 pub fn waveform_selection(
     command_tx: &async_channel::Sender<Command>,
-) -> (Frame, HashMap<WaveForm, Frame>, Rc<RefCell<Option<Frame>>>) {
+) -> (Frame, impl Fn(WaveForm) + use<>) {
     let frame = Frame::new(Some("Waveform"));
     frame.add_css_class("effect-section");
 
@@ -124,6 +117,8 @@ pub fn waveform_selection(
         waveforms.append(&btn);
     }
     inner.append(&waveforms);
+
+    let waveform_frames = Rc::new(waveform_frames);
 
     let envelope = GtkBox::new(Orientation::Horizontal, 12);
     envelope.set_halign(gtk4::Align::Center);
@@ -162,5 +157,16 @@ pub fn waveform_selection(
     inner.append(&envelope);
 
     frame.set_child(Some(&inner));
-    (frame, waveform_frames, selected)
+
+    let update = move |wf: WaveForm| {
+        if let Some(prev) = selected.borrow().as_ref() {
+            prev.remove_css_class("selected");
+        }
+        if let Some(f) = waveform_frames.get(&wf) {
+            f.add_css_class("selected");
+            *selected.borrow_mut() = Some(f.clone());
+        }
+    };
+
+    (frame, update)
 }

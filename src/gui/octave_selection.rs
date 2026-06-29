@@ -1,19 +1,13 @@
+use crate::config::{OCTAVE_DEFAULT, OCTAVE_MAX, OCTAVE_MIN};
 use crate::types::Command;
-use crate::types::OCTAVE_DEFAULT;
-use crate::types::OCTAVE_MAX;
-use crate::types::OCTAVE_MIN;
-use gtk::GestureClick;
-use gtk::prelude::*;
-use gtk::{Frame, Grid, Label, Overlay};
-use gtk4 as gtk;
-use gtk4::Align;
+use gtk4::{self as gtk, Align, Frame, GestureClick, Grid, Label, Overlay, prelude::*};
 use std::cell::RefCell;
 use std::rc::Rc;
 
 pub fn octave_selection(
     overlay: &Overlay,
     command_tx: &async_channel::Sender<Command>,
-) -> (Label, Rc<RefCell<usize>>) {
+) -> impl Fn(i32) + use<> {
     let container = gtk::Box::new(gtk::Orientation::Vertical, 0);
     container.set_halign(Align::Start);
     container.set_valign(Align::End);
@@ -76,7 +70,11 @@ pub fn octave_selection(
     container.append(&grid);
 
     overlay.add_overlay(&container);
-    (value, octave)
+
+    move |n: i32| {
+        value.set_text(&format!("{n}"));
+        *octave.borrow_mut() = n;
+    }
 }
 
 fn arrow_button(symbol: &str) -> Frame {
