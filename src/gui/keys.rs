@@ -43,7 +43,7 @@ fn key(
 
     {
         let command_tx = command_tx.clone();
-        let repeat_source = repeat_source.clone(); // TODO_SD: ???
+        let repeat_source = repeat_source.clone();
         let key = key.clone();
 
         gesture.connect_pressed(move |_, _, _, _| {
@@ -69,7 +69,6 @@ fn key(
         let repeat_source = repeat_source.clone();
         let key = key.clone();
         gesture.connect_released(move |_, _, _, _| {
-            println!("!!! BUTTON RELEASED");
             key.remove_css_class("active");
 
             if let Some(source_id) = repeat_source.borrow_mut().take() {

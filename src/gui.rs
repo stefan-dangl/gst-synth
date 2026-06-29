@@ -1,9 +1,9 @@
+use crate::config::{DEFAULT_HEIGHT, DEFAULT_WIDTH, GUI_TITLE};
 use crate::gui::{
     effects::effects, keyboard::attach_keyboard_handler, keys::keyboard,
     octave_selection::octave_selection, style::style, visualization::visualization,
     waveform_selection::waveform_selection,
 };
-use crate::config::{DEFAULT_HEIGHT, DEFAULT_WIDTH, GUI_TITLE};
 use crate::types::{Command, Note, UiEvent, WaveForm};
 use gtk4::{
     self as gtk, Align, Application, ApplicationWindow, Box as GtkBox, Orientation, Overlay,

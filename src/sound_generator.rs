@@ -1,8 +1,12 @@
-use crate::config::{ATTACK_TIME_DEFAULT, MAX_AMPLIFICATION, NOTE_REPEAT_INTERVAL, OCTAVE_DEFAULT, RELEASE_TIME_DEFAULT};
+use crate::config::{
+    ATTACK_TIME_DEFAULT, MAX_AMPLIFICATION, NOTE_REPEAT_INTERVAL, OCTAVE_DEFAULT,
+    RELEASE_TIME_DEFAULT, WAVEFORM_DEFAULT,
+};
 use crate::types::{Command, Note, Setting, WaveForm};
 use glib::MainContext;
 use gst::{Element, prelude::*};
 use std::time::Duration;
+use tracing::{debug, info};
 
 const SUSTAIN_TIME: Duration = Duration::from_millis(50);
 const RELEASE_STEPS: u32 = 100;
@@ -15,6 +19,7 @@ pub async fn sound_generator(
     let main_context = MainContext::default();
 
     let mut octave = OCTAVE_DEFAULT;
+    let mut last_wave_form = WAVEFORM_DEFAULT;
     let mut note_release_task: Option<glib::JoinHandle<()>> = None;
     let mut release_time = RELEASE_TIME_DEFAULT;
     let mut attack_time = ATTACK_TIME_DEFAULT;
@@ -26,6 +31,8 @@ pub async fn sound_generator(
             }
 
             Command::ChangeNote(note) => {
+                debug!(?note, "Note played");
+
                 if let Some(task) = note_release_task.take() {
                     task.abort();
                 }
@@ -58,11 +65,18 @@ pub async fn sound_generator(
                     WaveForm::Saw => "saw",
                     WaveForm::Triangle => "triangle",
                 };
-                audio_source.set_property_from_str("wave", wave_form);
+                if wave_form != last_wave_form {
+                    info!(?wave_form, "Waveform changed");
+                    last_wave_form = wave_form;
+                    audio_source.set_property_from_str("wave", wave_form);
+                }
             }
 
             Command::ChangeOctave(value) => {
-                octave = value;
+                if value != octave {
+                    info!(?value, "Octave changed");
+                    octave = value;
+                }
             }
 
             Command::ChangeSetting(setting) => match setting {
