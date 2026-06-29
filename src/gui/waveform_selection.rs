@@ -1,5 +1,6 @@
 use super::knob::knob;
-use crate::types::{ATTACK_TIME_DEFAULT, Command, RELEASE_TIME_DEFAULT, Setting, WaveForm};
+use crate::config::{ATTACK_TIME_DEFAULT, RELEASE_TIME_DEFAULT};
+use crate::types::{Command, Setting, WaveForm};
 use gtk4::{self as gtk, Box as GtkBox, DrawingArea, Frame, GestureClick, Orientation, prelude::*};
 use std::{cell::RefCell, collections::HashMap, f64::consts::PI, rc::Rc, time::Duration};
 

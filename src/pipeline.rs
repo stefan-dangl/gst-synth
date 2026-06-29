@@ -1,8 +1,6 @@
 use gst::{Element, ElementFactory, Pipeline, prelude::*};
 
-use crate::types::{
-    DEFAULT_ECHO_DELAY, DEFAULT_ECHO_FEEDBACK, DEFAULT_ECHO_INTENSITY, WAVEFORM_DEFAULT,
-};
+use crate::config::{DEFAULT_ECHO_DELAY, DEFAULT_ECHO_FEEDBACK, DEFAULT_ECHO_INTENSITY, WAVEFORM_DEFAULT};
 
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 fn create_effect_bin() -> Element {

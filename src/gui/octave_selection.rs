@@ -1,4 +1,5 @@
-use crate::types::{Command, OCTAVE_DEFAULT, OCTAVE_MAX, OCTAVE_MIN};
+use crate::config::{OCTAVE_DEFAULT, OCTAVE_MAX, OCTAVE_MIN};
+use crate::types::Command;
 use gtk4::{self as gtk, Align, Frame, GestureClick, Grid, Label, Overlay, prelude::*};
 use std::cell::RefCell;
 use std::rc::Rc;

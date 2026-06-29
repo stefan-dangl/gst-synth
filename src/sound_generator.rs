@@ -1,7 +1,5 @@
-use crate::types::{
-    ATTACK_TIME_DEFAULT, Command, MAX_AMPLIFICATION, NOTE_REPEAT_INTERVAL, Note, OCTAVE_DEFAULT,
-    RELEASE_TIME_DEFAULT, Setting, WaveForm,
-};
+use crate::config::{ATTACK_TIME_DEFAULT, MAX_AMPLIFICATION, NOTE_REPEAT_INTERVAL, OCTAVE_DEFAULT, RELEASE_TIME_DEFAULT};
+use crate::types::{Command, Note, Setting, WaveForm};
 use glib::MainContext;
 use gst::{Element, prelude::*};
 use std::time::Duration;

@@ -1,4 +1,5 @@
-use crate::types::{Command, NOTE_REPEAT_INTERVAL, Note, UiEvent, WaveForm};
+use crate::config::NOTE_REPEAT_INTERVAL;
+use crate::types::{Command, Note, UiEvent, WaveForm};
 use gtk4::{self as gtk, gdk, glib, prelude::*};
 use std::cell::RefCell;
 use std::rc::Rc;

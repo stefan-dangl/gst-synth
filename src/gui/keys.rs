@@ -1,4 +1,5 @@
-use crate::types::{Command, NOTE_REPEAT_INTERVAL, Note};
+use crate::config::NOTE_REPEAT_INTERVAL;
+use crate::types::{Command, Note};
 use gtk4::{
     Align, Box as GtkBox, Frame, GestureClick, Label, Orientation, Overlay, glib, prelude::*,
 };
