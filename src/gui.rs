@@ -28,9 +28,9 @@ fn spawn_ui_dispatcher(
     glib::MainContext::default().spawn_local(async move {
         while let Ok(event) = ui_rx.recv().await {
             match event {
-                UiEvent::NoteChanged(note) => update_note(note),
-                UiEvent::OctaveChanged(n) => update_octave(n),
-                UiEvent::WaveFormChanged(wf) => update_waveform(wf),
+                UiEvent::Note(note) => update_note(note),
+                UiEvent::Octave(n) => update_octave(n),
+                UiEvent::WaveForm(wf) => update_waveform(wf),
             }
         }
     });

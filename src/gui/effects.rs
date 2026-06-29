@@ -97,6 +97,7 @@ fn filter_section(band_pass: &Element, equalizer: &Element) -> Frame {
 }
 
 fn echo_section(echo: &Element) -> Frame {
+    #[allow(clippy::cast_precision_loss)]
     let delay_init = echo.property::<u64>("delay") as f64 / 1_000_000.0;
     let intensity_init = f64::from(echo.property::<f32>("intensity"));
     let feedback_init = f64::from(echo.property::<f32>("feedback"));

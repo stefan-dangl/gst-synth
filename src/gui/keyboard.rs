@@ -70,15 +70,15 @@ pub fn attach_keyboard_handler(
             *active_key.borrow_mut() = Some(key);
 
             let ui_event = match command {
-                Command::ChangeNote(note) => Some(UiEvent::NoteChanged(Some(note))),
-                Command::ChangeWaveForm(wf) => Some(UiEvent::WaveFormChanged(wf)),
-                Command::ChangeOctave(n) => Some(UiEvent::OctaveChanged(n)),
+                Command::ChangeNote(note) => Some(UiEvent::Note(Some(note))),
+                Command::ChangeWaveForm(wf) => Some(UiEvent::WaveForm(wf)),
+                Command::ChangeOctave(n) => Some(UiEvent::Octave(n)),
                 _ => None,
             };
-            if let Some(ui_event) = ui_event {
-                if let Err(err) = ui_tx.try_send(ui_event) {
-                    eprintln!("Failed to send ui event: {err:?}");
-                }
+            if let Some(ui_event) = ui_event
+                && let Err(err) = ui_tx.try_send(ui_event)
+            {
+                eprintln!("Failed to send ui event: {err:?}");
             }
 
             if let Err(err) = command_tx.try_send(command) {
@@ -105,7 +105,7 @@ pub fn attach_keyboard_handler(
                 if let Some(id) = repeat_source.borrow_mut().take() {
                     id.remove();
                 }
-                let _ = ui_tx.try_send(UiEvent::NoteChanged(None));
+                let _ = ui_tx.try_send(UiEvent::Note(None));
             }
         });
     }

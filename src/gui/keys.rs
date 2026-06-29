@@ -158,10 +158,10 @@ pub fn keyboard(
     let key_map = Rc::new(key_map);
     let active: Rc<RefCell<Option<Note>>> = Rc::new(RefCell::new(None));
     move |note: Option<Note>| {
-        if let Some(prev) = active.borrow_mut().take() {
-            if let Some(frame) = key_map.get(&prev) {
-                frame.remove_css_class("active");
-            }
+        if let Some(prev) = active.borrow_mut().take()
+            && let Some(frame) = key_map.get(&prev)
+        {
+            frame.remove_css_class("active");
         }
         if let Some(n) = note {
             if let Some(frame) = key_map.get(&n) {

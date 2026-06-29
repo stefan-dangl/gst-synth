@@ -90,7 +90,7 @@ pub fn knob(
     {
         let value = value.clone();
         da.set_draw_func(move |_, cr, w, h| {
-            draw_knob(cr, w, h, *value.borrow(), min, max, logarithmic)
+            draw_knob(cr, w, h, *value.borrow(), min, max, logarithmic);
         });
     }
 

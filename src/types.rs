@@ -42,7 +42,7 @@ pub enum Command {
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum UiEvent {
-    NoteChanged(Option<Note>),
-    OctaveChanged(i32),
-    WaveFormChanged(WaveForm),
+    Note(Option<Note>),
+    Octave(i32),
+    WaveForm(WaveForm),
 }
