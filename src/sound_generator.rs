@@ -1,9 +1,6 @@
-use crate::{
-    keyboard::REPEAT_INTERVAL,
-    types::{
-        ATTACK_TIME_DEFAULT, Command, MAX_AMPLIFICATION, Note, OCTAVE_DEFAULT,
-        RELEASE_TIME_DEFAULT, Setting, WaveForm,
-    },
+use crate::types::{
+    ATTACK_TIME_DEFAULT, Command, MAX_AMPLIFICATION, NOTE_REPEAT_INTERVAL, Note, OCTAVE_DEFAULT,
+    RELEASE_TIME_DEFAULT, Setting, WaveForm,
 };
 use glib::MainContext;
 use gst::{Element, prelude::*};
@@ -79,7 +76,7 @@ pub async fn sound_generator(
 }
 
 fn note_attack(audio_amplify: &Element, attack_time: Duration) {
-    let x_steps = attack_time.as_secs_f32() / REPEAT_INTERVAL.as_secs_f32();
+    let x_steps = attack_time.as_secs_f32() / NOTE_REPEAT_INTERVAL.as_secs_f32();
     let y_steps = MAX_AMPLIFICATION / x_steps;
 
     let amplification = audio_amplify.property::<f32>("amplification");

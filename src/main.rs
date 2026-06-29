@@ -2,7 +2,6 @@ use crate::{gui::draw_gui, pipeline::create_pipeline, sound_generator::sound_gen
 use gst::{State, prelude::*};
 
 mod gui;
-mod keyboard;
 mod pipeline;
 mod sound_generator;
 mod types;

@@ -1,8 +1,8 @@
 use crate::gui::{
-    effects::effects, keys::keyboard, octave_selection::octave_selection, style::style,
-    visualization::visualization, waveform_selection::waveform_selection,
+    effects::effects, keyboard::attach_keyboard_handler, keys::keyboard,
+    octave_selection::octave_selection, style::style, visualization::visualization,
+    waveform_selection::waveform_selection,
 };
-use crate::keyboard::attach_keyboard_handler;
 use crate::types::{Command, DEFAULT_HEIGHT, DEFAULT_WIDTH, GUI_TITLE};
 use gtk4::{
     self as gtk, Align, Application, ApplicationWindow, Box as GtkBox, Orientation, Overlay,
@@ -10,6 +10,7 @@ use gtk4::{
 };
 
 mod effects;
+mod keyboard;
 mod keys;
 mod knob;
 mod octave_selection;

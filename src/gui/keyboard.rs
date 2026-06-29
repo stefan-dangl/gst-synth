@@ -1,13 +1,10 @@
-use crate::types::{Command, Note, WaveForm};
+use crate::types::{Command, NOTE_REPEAT_INTERVAL, Note, WaveForm};
 use gtk4::{self as gtk, gdk, glib, prelude::*};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::time::Duration;
 
 // TODO_SD: Check
-
-pub const REPEAT_INTERVAL: Duration = Duration::from_millis(5);
 
 fn key_to_command(key: gdk::Key) -> Option<Command> {
     match key {
@@ -112,7 +109,7 @@ pub fn attach_keyboard_handler(
             let _ = command_tx.try_send(command);
 
             let command_tx = command_tx.clone();
-            let id = glib::timeout_add_local(REPEAT_INTERVAL, move || {
+            let id = glib::timeout_add_local(NOTE_REPEAT_INTERVAL, move || {
                 let _ = command_tx.try_send(command);
                 glib::ControlFlow::Continue
             });

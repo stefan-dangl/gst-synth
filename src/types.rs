@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+// TODO_SD: Move to dedicated config module?
+
 // GUI - Related
 pub const GUI_TITLE: &str = "Gst - Synth";
 pub const DEFAULT_WIDTH: i32 = 1600;
@@ -13,6 +15,7 @@ pub const WAVEFORM_DEFAULT: &str = "saw";
 pub const DEFAULT_ECHO_DELAY: f64 = 550.0;
 pub const DEFAULT_ECHO_INTENSITY: f64 = 0.2;
 pub const DEFAULT_ECHO_FEEDBACK: f64 = 0.4;
+pub const NOTE_REPEAT_INTERVAL: Duration = Duration::from_millis(5);
 
 // Ranges
 pub const OCTAVE_MIN: i32 = 1;
