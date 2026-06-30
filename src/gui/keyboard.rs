@@ -3,6 +3,7 @@ use crate::types::{Command, Note, UiEvent, WaveForm};
 use gtk4::{self as gtk, gdk, glib, prelude::*};
 use std::cell::RefCell;
 use std::rc::Rc;
+use tracing::error;
 
 fn key_to_command(key: gdk::Key) -> Option<Command> {
     match key {
@@ -78,17 +79,17 @@ pub fn attach_keyboard_handler(
             if let Some(ui_event) = ui_event
                 && let Err(err) = ui_tx.try_send(ui_event)
             {
-                eprintln!("Failed to send ui event: {err:?}");
+                error!(?err, "Failed to send ui event");
             }
 
             if let Err(err) = command_tx.try_send(command) {
-                eprintln!("Failed to send command: {err:?}");
+                error!(?err, "Failed to send command");
             }
 
             let command_tx = command_tx.clone();
             let command_repeater = glib::timeout_add_local(NOTE_REPEAT_INTERVAL, move || {
                 if let Err(err) = command_tx.try_send(command) {
-                    eprintln!("Failed to repeat keyboard command: {err:?}");
+                    error!(?err, "Failed to repeat keyboard command");
                 }
                 glib::ControlFlow::Continue
             });

@@ -103,7 +103,9 @@ Ideas to inspire you:
   - Effect drop-down list (letting effects being switched at runtime)
 - **Midi Support**
   - Currently the synthesizer can only be played with computer keyboards/mouses. I'm planning to add Midi keyboard support myself but don't know when I will find time for it.
-- **Portability** 
-  - Currently the project only runs on Linux (mostly due to its dependencies). However, it would be cool to run it on other platforms as well.
+- **Multi Voice**
+  - Currently the synthesizer is single voice (only one note can be played at a time). This was intentional. However, an extension to multi voice could be cool.
+- **Multi Octaves**
+  - As a follow up to *Multi Voice* and *Midi Support* it would make sense to play notes of multiple octaves without having to switch the octave explicitly.
 
 Thanks in advance!

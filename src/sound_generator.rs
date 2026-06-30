@@ -1,8 +1,12 @@
-use crate::config::{ATTACK_TIME_DEFAULT, MAX_AMPLIFICATION, NOTE_REPEAT_INTERVAL, OCTAVE_DEFAULT, RELEASE_TIME_DEFAULT};
+use crate::config::{
+    ATTACK_TIME_DEFAULT, MAX_AMPLIFICATION, NOTE_REPEAT_INTERVAL, OCTAVE_DEFAULT,
+    RELEASE_TIME_DEFAULT, WAVEFORM_DEFAULT,
+};
 use crate::types::{Command, Note, Setting, WaveForm};
 use glib::MainContext;
 use gst::{Element, prelude::*};
 use std::time::Duration;
+use tracing::{debug, info};
 
 const SUSTAIN_TIME: Duration = Duration::from_millis(50);
 const RELEASE_STEPS: u32 = 100;
@@ -13,8 +17,17 @@ pub async fn sound_generator(
     command_rx: async_channel::Receiver<Command>,
 ) {
     let main_context = MainContext::default();
+    sound_generator_inner(audio_source, audio_amplify, command_rx, main_context).await;
+}
 
+async fn sound_generator_inner(
+    audio_source: Element,
+    audio_amplify: Element,
+    command_rx: async_channel::Receiver<Command>,
+    main_context: MainContext,
+) {
     let mut octave = OCTAVE_DEFAULT;
+    let mut last_wave_form = WAVEFORM_DEFAULT;
     let mut note_release_task: Option<glib::JoinHandle<()>> = None;
     let mut release_time = RELEASE_TIME_DEFAULT;
     let mut attack_time = ATTACK_TIME_DEFAULT;
@@ -26,6 +39,8 @@ pub async fn sound_generator(
             }
 
             Command::ChangeNote(note) => {
+                debug!(?note, "Note played");
+
                 if let Some(task) = note_release_task.take() {
                     task.abort();
                 }
@@ -58,11 +73,18 @@ pub async fn sound_generator(
                     WaveForm::Saw => "saw",
                     WaveForm::Triangle => "triangle",
                 };
-                audio_source.set_property_from_str("wave", wave_form);
+                if wave_form != last_wave_form {
+                    info!(?wave_form, "Waveform changed");
+                    last_wave_form = wave_form;
+                    audio_source.set_property_from_str("wave", wave_form);
+                }
             }
 
             Command::ChangeOctave(value) => {
-                octave = value;
+                if value != octave {
+                    info!(?value, "Octave changed");
+                    octave = value;
+                }
             }
 
             Command::ChangeSetting(setting) => match setting {
@@ -146,7 +168,7 @@ mod tests {
         F: FnOnce(glib::MainContext) -> Fut,
         Fut: Future<Output = ()> + 'static,
     {
-        let ctx = MainContext::default();
+        let ctx = MainContext::new();
         let fut = f(ctx.clone());
         ctx.block_on(fut);
     }
@@ -156,7 +178,7 @@ mod tests {
         run(|ctx| async move {
             let (pipeline, src, amp) = setup_test_pipeline();
             let (tx, rx) = async_channel::bounded(5);
-            ctx.spawn_local(sound_generator(src.clone(), amp, rx));
+            ctx.spawn_local(sound_generator_inner(src.clone(), amp, rx, ctx.clone()));
 
             for (wave, expected_nick) in [
                 (WaveForm::Sine, "sine"),
@@ -184,7 +206,7 @@ mod tests {
         run(|ctx| async move {
             let (pipeline, src, amp) = setup_test_pipeline();
             let (tx, rx) = async_channel::bounded(5);
-            ctx.spawn_local(sound_generator(src.clone(), amp, rx));
+            ctx.spawn_local(sound_generator_inner(src.clone(), amp, rx, ctx.clone()));
             tx.send(Command::ChangeOctave(4)).await.unwrap();
 
             for (note, expected_freq) in [
@@ -221,7 +243,7 @@ mod tests {
         run(|ctx| async move {
             let (pipeline, src, amp) = setup_test_pipeline();
             let (tx, rx) = async_channel::bounded(5);
-            ctx.spawn_local(sound_generator(src.clone(), amp, rx));
+            ctx.spawn_local(sound_generator_inner(src.clone(), amp, rx, ctx.clone()));
 
             for (octave, expected_freq) in [
                 (1, 55.0),
