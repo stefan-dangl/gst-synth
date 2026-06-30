@@ -17,7 +17,15 @@ pub async fn sound_generator(
     command_rx: async_channel::Receiver<Command>,
 ) {
     let main_context = MainContext::default();
+    sound_generator_inner(audio_source, audio_amplify, command_rx, main_context).await;
+}
 
+async fn sound_generator_inner(
+    audio_source: Element,
+    audio_amplify: Element,
+    command_rx: async_channel::Receiver<Command>,
+    main_context: MainContext,
+) {
     let mut octave = OCTAVE_DEFAULT;
     let mut last_wave_form = WAVEFORM_DEFAULT;
     let mut note_release_task: Option<glib::JoinHandle<()>> = None;
@@ -160,7 +168,7 @@ mod tests {
         F: FnOnce(glib::MainContext) -> Fut,
         Fut: Future<Output = ()> + 'static,
     {
-        let ctx = MainContext::default();
+        let ctx = MainContext::new();
         let fut = f(ctx.clone());
         ctx.block_on(fut);
     }
@@ -170,7 +178,7 @@ mod tests {
         run(|ctx| async move {
             let (pipeline, src, amp) = setup_test_pipeline();
             let (tx, rx) = async_channel::bounded(5);
-            ctx.spawn_local(sound_generator(src.clone(), amp, rx));
+            ctx.spawn_local(sound_generator_inner(src.clone(), amp, rx, ctx.clone()));
 
             for (wave, expected_nick) in [
                 (WaveForm::Sine, "sine"),
@@ -198,7 +206,7 @@ mod tests {
         run(|ctx| async move {
             let (pipeline, src, amp) = setup_test_pipeline();
             let (tx, rx) = async_channel::bounded(5);
-            ctx.spawn_local(sound_generator(src.clone(), amp, rx));
+            ctx.spawn_local(sound_generator_inner(src.clone(), amp, rx, ctx.clone()));
             tx.send(Command::ChangeOctave(4)).await.unwrap();
 
             for (note, expected_freq) in [
@@ -235,7 +243,7 @@ mod tests {
         run(|ctx| async move {
             let (pipeline, src, amp) = setup_test_pipeline();
             let (tx, rx) = async_channel::bounded(5);
-            ctx.spawn_local(sound_generator(src.clone(), amp, rx));
+            ctx.spawn_local(sound_generator_inner(src.clone(), amp, rx, ctx.clone()));
 
             for (octave, expected_freq) in [
                 (1, 55.0),
